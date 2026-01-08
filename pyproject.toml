@@ -1,0 +1,75 @@
+[build-system]
+requires = ["poetry-core>=1.7.0", "poetry-dynamic-versioning"]
+build-backend = "poetry_dynamic_versioning.backend"
+
+[project]
+name = "tads_analyzer"
+description = "A set of notebooks to analyze images of TADs stored in an OMERO server"
+authors = [
+    {name = "Julio Mateos Langerak", email = "julio.mateos-langerak@igh,cnrs.fr"},
+]
+maintainers = [
+    {name = "Julio Mateos Langerak", email = "julio.mateos-langerak@igh,cnrs.fr"},
+]
+keywords = ["microscopy", "chromatin", "OMERO"]
+license = {text = "GPL-3.0-only"}
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dynamic = [
+    "classifiers",
+]
+version = "0.0.1"
+
+[project.urls]
+homepage = "https://github.com/juliomateoslangerak/TADs_analyzer"
+repository = "https://github.com/juliomateoslangerak/TADs_analyzer"
+documentation = "https://github.com/juliomateoslangerak/TADs_analyzer"
+
+[tool.poetry]
+packages = [
+    { include = "tads_analyzer" },
+]
+requires-poetry = ">=2.0"
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Image Processing"
+]
+
+[tool.poetry.dependencies]
+marimo = "*"
+scikit-image = "^0.26"
+omero-py = "^5.21"
+omero-rois = "^0.3"
+zeroc-ice = [
+    { platform = "linux", python = "3.9", url = "https://github.com/glencoesoftware/zeroc-ice-py-linux-x86_64/releases/download/20240202/zeroc_ice-3.6.5-cp39-cp39-manylinux_2_28_x86_64.whl"},
+    { platform = "linux", python = "3.10", url = "https://github.com/glencoesoftware/zeroc-ice-py-linux-x86_64/releases/download/20240202/zeroc_ice-3.6.5-cp310-cp310-manylinux_2_28_x86_64.whl"},
+    { platform = "linux", python = "3.11", url = "https://github.com/glencoesoftware/zeroc-ice-py-linux-x86_64/releases/download/20240202/zeroc_ice-3.6.5-cp311-cp311-manylinux_2_28_x86_64.whl"},
+    { platform = "linux", python = "3.12", url = "https://github.com/glencoesoftware/zeroc-ice-py-linux-x86_64/releases/download/20240202/zeroc_ice-3.6.5-cp312-cp312-manylinux_2_28_x86_64.whl"},
+    { platform = "darwin", python = "3.9", url = "https://github.com/glencoesoftware/zeroc-ice-py-macos-x86_64/releases/download/20231130/zeroc_ice-3.6.5-cp39-cp39-macosx_11_0_x86_64.whl"},
+    { platform = "darwin", python = "3.10", url = "https://github.com/glencoesoftware/zeroc-ice-py-macos-universal2/releases/download/20240131/zeroc_ice-3.6.5-cp310-cp310-macosx_11_0_universal2.whl"},
+    { platform = "darwin", python = "3.11", url = "https://github.com/glencoesoftware/zeroc-ice-py-macos-universal2/releases/download/20240131/zeroc_ice-3.6.5-cp311-cp311-macosx_11_0_universal2.whl"},
+    { platform = "darwin", python = "3.12", url = "https://github.com/glencoesoftware/zeroc-ice-py-macos-universal2/releases/download/20240131/zeroc_ice-3.6.5-cp312-cp312-macosx_11_0_universal2.whl"},
+    { platform = "win32", python = "3.9", url = "https://github.com/glencoesoftware/zeroc-ice-py-win-x86_64/releases/download/20240325/zeroc_ice-3.6.5-cp39-cp39-win_amd64.whl"},
+    { platform = "win32", python = "3.10", url = "https://github.com/glencoesoftware/zeroc-ice-py-win-x86_64/releases/download/20240325/zeroc_ice-3.6.5-cp310-cp310-win_amd64.whl"},
+    { platform = "win32", python = "3.11", url = "https://github.com/glencoesoftware/zeroc-ice-py-win-x86_64/releases/download/20240325/zeroc_ice-3.6.5-cp311-cp311-win_amd64.whl"},
+    { platform = "win32", python = "3.12", url = "https://github.com/glencoesoftware/zeroc-ice-py-win-x86_64/releases/download/20240325/zeroc_ice-3.6.5-cp312-cp312-win_amd64.whl"}
+]
+
+[tool.poetry.group.test.dependencies]
+
+[tool.poetry.group.dev.dependencies]
+black = "^25"
+poetry = "^2"
+isort = "^6"
+pre-commit = "^4"
+
+[tool.isort]
+profile = "black"
+
+
