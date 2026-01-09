@@ -15,9 +15,11 @@ def _(mo):
 @app.cell
 def _():
     import marimo as mo
+    import numpy as np
     import omero_toolbox as omero_tb
+    import analysis_functions
     from skimage.feature import blob_log
-    return mo, omero_tb
+    return analysis_functions, mo, np, omero_tb
 
 
 @app.cell(hide_code=True)
@@ -33,9 +35,9 @@ def _(mo):
     conn_params = mo.ui.array([
         mo.ui.text(label="OMERO username"),
         mo.ui.text(label="OMERO password", kind="password"),
-        mo.ui.text(label="OMERO server URL"),
+        mo.ui.text(value="omero.mri.cnrs.fr", label="OMERO server URL"),
         mo.ui.number(value=4064, start=1, step=1, label="OMERO port"),
-        mo.ui.text(label="Group"),
+        mo.ui.text(value="CND project", label="Group"),
         mo.ui.checkbox(value=True, label="Secured connection")
     ])
     conn_params
@@ -66,15 +68,49 @@ def _(mo):
 
 
 @app.cell
-def _(conn, data_params, omero_tb):
+def _(mo):
+    analysis_params = mo.ui.array([
+        mo.ui.number(value=20.0, label="Min sigma", start=1.0, stop=100.0),
+        mo.ui.number(value=50.0, label="Max sigma", start=2.0, stop=200.0),
+        mo.ui.number(value=0, label="channel to analyze", start=0, stop=10, step=1)
+    ])
+    analysis_params
+    return (analysis_params,)
+
+
+@app.cell
+def _(analysis_functions, analysis_params, conn, data_params, np, omero_tb):
     dataset = omero_tb.get_dataset(connection=conn, dataset_id=data_params[0].value)
     dataset_images = omero_tb.get_dataset_images(dataset=dataset)
-    print([i.getName() for i in dataset_images])
+
+    for image in dataset_images:
+        image_name = image.getName()
+        if not image_name.endswith("SIR.dv"):
+            continue
+        print(f"Analyzing: {image_name}")
+        image_data = omero_tb.get_intensities(image, c_range=int(analysis_params[2].value))
+        image_data = analysis_functions.rescale_SIM(image_data)
+        image_data = np.squeeze(image_data)
+        spots = analysis_functions.find_spots(
+            image_data, 
+            min_sigma=analysis_params[0].value, 
+            max_sigma=analysis_params[1].value
+        )
+        points = []
+        for spot in spots:
+            p = omero_tb.create_shape_point(x_pos=spot[2], y_pos=spot[1], z_pos=spot[0], c_pos=int(analysis_params[2].value))
+            points.append(p)
+
+        roi = omero_tb.create_roi(conn, image, points)
+        print(f"Found {len(points)} spots")
+
+
     return
 
 
 @app.cell
-def _():
+def _(conn):
+    conn.close()
     return
 
 

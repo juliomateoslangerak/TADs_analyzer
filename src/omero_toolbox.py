@@ -223,10 +223,10 @@ def _get_planes(image, ranges):
             _get_whole_planes()
         else:
             _get_whole_tiles()
-        intensities = np.reshape(intensities, newshape=output_shape)
+        intensities = np.reshape(intensities, shape=output_shape)
 
     else:  # Must tile images or tiles
-        intensities = np.reshape(intensities, newshape=output_shape)
+        intensities = np.reshape(intensities, shape=output_shape)
         if image.getSizeX() == output_shape[4] and image.getSizeY() == output_shape[3]:
             _get_tiled_planes()
         else:
