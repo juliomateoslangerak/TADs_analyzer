@@ -41,6 +41,7 @@ def find_spots(
     max_sigma=20,
     threshold_rel=0.3,
     overlap=0.5,
+    exclude_border=False,
 ):
     return blob_dog(
         image,
@@ -48,5 +49,5 @@ def find_spots(
         max_sigma=max_sigma,
         threshold_rel=threshold_rel,
         overlap=overlap,
-        exclude_border=True
+        exclude_border=exclude_border
     )
