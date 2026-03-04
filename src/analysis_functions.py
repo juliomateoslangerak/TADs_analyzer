@@ -21,7 +21,11 @@ def rescale_SIM(image, bins=256, out_range=None):
     np.ndarray
         Rescaled image as int16
     """
-    image_dtype_max = np.finfo(image.dtype).max if np.issubdtype(image.dtype, np.floating) else np.iinfo(image.dtype).max
+    image_dtype_max = (
+        np.finfo(image.dtype).max
+        if np.issubdtype(image.dtype, np.floating)
+        else np.iinfo(image.dtype).max
+    )
 
     # Use histogram to find mode for float arrays
     hist, bin_edges = np.histogram(image.ravel(), bins=bins)
@@ -32,7 +36,9 @@ def rescale_SIM(image, bins=256, out_range=None):
     if out_range is None:
         out_range = (image_mode, image_dtype_max)
 
-    return rescale_intensity(image=image, in_range=(image_mode, image_dtype_max), out_range=out_range)
+    return rescale_intensity(
+        image=image, in_range=(image_mode, image_dtype_max), out_range=out_range
+    )
 
 
 def find_spots(
@@ -49,5 +55,5 @@ def find_spots(
         max_sigma=max_sigma,
         threshold_rel=threshold_rel,
         overlap=overlap,
-        exclude_border=exclude_border
+        exclude_border=exclude_border,
     )

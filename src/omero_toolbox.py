@@ -23,56 +23,65 @@ import struct
 from skimage import draw
 
 
-DTYPES_NP_TO_OMERO = {'int8': enums.PixelsTypeint8,
-                      'int16': enums.PixelsTypeint16,
-                      'uint16': enums.PixelsTypeuint16,
-                      'int32': enums.PixelsTypeint32,
-                      'float_': enums.PixelsTypefloat,
-                      'float8': enums.PixelsTypefloat,
-                      'float16': enums.PixelsTypefloat,
-                      'float32': enums.PixelsTypefloat,
-                      'float64': enums.PixelsTypedouble,
-                      'complex_': enums.PixelsTypecomplex,
-                      'complex64': enums.PixelsTypecomplex}
+DTYPES_NP_TO_OMERO = {
+    "int8": enums.PixelsTypeint8,
+    "int16": enums.PixelsTypeint16,
+    "uint16": enums.PixelsTypeuint16,
+    "int32": enums.PixelsTypeint32,
+    "float_": enums.PixelsTypefloat,
+    "float8": enums.PixelsTypefloat,
+    "float16": enums.PixelsTypefloat,
+    "float32": enums.PixelsTypefloat,
+    "float64": enums.PixelsTypedouble,
+    "complex_": enums.PixelsTypecomplex,
+    "complex64": enums.PixelsTypecomplex,
+}
 
-DTYPES_OMERO_TO_NP = {enums.PixelsTypeint8: 'int8',
-                      enums.PixelsTypeuint8: 'uint8',
-                      enums.PixelsTypeint16: 'int16',
-                      enums.PixelsTypeuint16: 'uint16',
-                      enums.PixelsTypeint32: 'int32',
-                      enums.PixelsTypeuint32: 'uint32',
-                      enums.PixelsTypefloat: 'float32',
-                      enums.PixelsTypedouble: 'double'}
-
-
-COLUMN_TYPES = {'string': grid.StringColumn,
-                'long': grid.LongColumn,
-                'bool': grid.BoolColumn,
-                'double': grid.DoubleColumn,
-                'long_array': grid.LongArrayColumn,
-                'float_array': grid.FloatArrayColumn,
-                'double_array': grid.DoubleArrayColumn,
-                'image': grid.ImageColumn,
-                'dataset': grid.DatasetColumn,
-                'plate': grid.PlateColumn,
-                'well': grid.WellColumn,
-                'roi': grid.RoiColumn,
-                'mask': grid.MaskColumn,
-                'file': grid.FileColumn,
-                }
+DTYPES_OMERO_TO_NP = {
+    enums.PixelsTypeint8: "int8",
+    enums.PixelsTypeuint8: "uint8",
+    enums.PixelsTypeint16: "int16",
+    enums.PixelsTypeuint16: "uint16",
+    enums.PixelsTypeint32: "int32",
+    enums.PixelsTypeuint32: "uint32",
+    enums.PixelsTypefloat: "float32",
+    enums.PixelsTypedouble: "double",
+}
 
 
-def open_connection(username, password, host, port, group=None, secure=True, keep_alive=60):
-    conn = gw.BlitzGateway(username=username,
-                           passwd=password,
-                           host=host,
-                           port=port,
-                           group=group,
-                           secure=secure)
+COLUMN_TYPES = {
+    "string": grid.StringColumn,
+    "long": grid.LongColumn,
+    "bool": grid.BoolColumn,
+    "double": grid.DoubleColumn,
+    "long_array": grid.LongArrayColumn,
+    "float_array": grid.FloatArrayColumn,
+    "double_array": grid.DoubleArrayColumn,
+    "image": grid.ImageColumn,
+    "dataset": grid.DatasetColumn,
+    "plate": grid.PlateColumn,
+    "well": grid.WellColumn,
+    "roi": grid.RoiColumn,
+    "mask": grid.MaskColumn,
+    "file": grid.FileColumn,
+}
+
+
+def open_connection(
+    username, password, host, port, group=None, secure=True, keep_alive=60
+):
+    conn = gw.BlitzGateway(
+        username=username,
+        passwd=password,
+        host=host,
+        port=port,
+        group=group,
+        secure=secure,
+    )
 
     if keep_alive is not None:
         conn.c.enableKeepAlive(keep_alive)
-        
+
     try:
         conn.connect()
     except Exception as e:
@@ -86,7 +95,7 @@ def close_connection(connection):
 
 def get_image(connection, image_id):
     try:
-        image = connection.getObject('Image', image_id)
+        image = connection.getObject("Image", image_id)
     except Exception as e:
         raise e
     return image
@@ -94,7 +103,7 @@ def get_image(connection, image_id):
 
 def get_dataset(connection, dataset_id):
     try:
-        dataset = connection.getObject('Dataset', dataset_id)
+        dataset = connection.getObject("Dataset", dataset_id)
     except Exception as e:
         raise e
     return dataset
@@ -102,7 +111,7 @@ def get_dataset(connection, dataset_id):
 
 def get_project(connection, project_id):
     try:
-        project = connection.getObject('Project', project_id)
+        project = connection.getObject("Project", project_id)
     except Exception as e:
         raise e
     return project
@@ -110,29 +119,33 @@ def get_project(connection, project_id):
 
 def get_image_shape(image):
     try:
-        image_shape = (image.getSizeZ(),
-                       image.getSizeC(),
-                       image.getSizeT(),
-                       image.getSizeY(),
-                       image.getSizeX())
+        image_shape = (
+            image.getSizeZ(),
+            image.getSizeC(),
+            image.getSizeT(),
+            image.getSizeY(),
+            image.getSizeX(),
+        )
     except Exception as e:
         raise e
 
     return image_shape
 
 
-def get_pixel_size(image, order='ZXY'):
+def get_pixel_size(image, order="ZXY"):
     pixels = image.getPrimaryPixels()
 
     order = order.upper()
-    if order not in ['ZXY', 'ZYX', 'XYZ', 'XZY', 'YXZ', 'YZX']:
-        raise ValueError('The provided order for the axis is not valid')
+    if order not in ["ZXY", "ZYX", "XYZ", "XZY", "YXZ", "YZX"]:
+        raise ValueError("The provided order for the axis is not valid")
     pixel_sizes = tuple()
     for a in order:
         try:
-            pixel_sizes += (getattr(pixels, f'getPhysicalSize{a}')().getValue(), )
+            pixel_sizes += (getattr(pixels, f"getPhysicalSize{a}")().getValue(),)
         except AttributeError:
-            pixel_sizes += (1.0, )  # If the pixel size is not set, we return the unit value as 1.0
+            pixel_sizes += (
+                1.0,
+            )  # If the pixel size is not set, we return the unit value as 1.0
     return pixel_sizes
 
 
@@ -146,7 +159,14 @@ def get_pixel_size_units(image):
     )
 
 
-def get_intensities(image: gw.ImageWrapper, z_range=None, c_range=None, t_range=None, y_range=None, x_range=None):
+def get_intensities(
+    image: gw.ImageWrapper,
+    z_range=None,
+    c_range=None,
+    t_range=None,
+    y_range=None,
+    x_range=None,
+):
     """Returns a numpy array containing the intensity values of the image
     Returns an array with dimensions arranged as zctyx
     """
@@ -161,7 +181,7 @@ def get_intensities(image: gw.ImageWrapper, z_range=None, c_range=None, t_range=
             if type(r) is int:
                 ranges[dim] = range(r, r + 1)
             elif type(r) is not tuple:
-                raise TypeError('Range must be provided as a tuple.')
+                raise TypeError("Range must be provided as a tuple.")
             else:  # range is a tuple
                 if len(r) == 1:
                     ranges[dim] = range(r[0])
@@ -170,15 +190,14 @@ def get_intensities(image: gw.ImageWrapper, z_range=None, c_range=None, t_range=
                 elif len(r) == 3:
                     ranges[dim] = range(r[0], r[1], r[2])
                 else:
-                    raise IndexError('Range values must contain 1 to three values')
+                    raise IndexError("Range values must contain 1 to three values")
             if not 1 <= ranges[dim].stop <= image_shape[dim]:
-                raise IndexError('Specified range is outside of the image dimensions')
+                raise IndexError("Specified range is outside of the image dimensions")
 
     return _get_planes(image, ranges)
 
 
 def _get_planes(image, ranges):
-
     def _get_whole_planes():
         np.stack(list(pixels.getPlanes(zctList=zct_list)), out=intensities)
 
@@ -186,11 +205,13 @@ def _get_planes(image, ranges):
         zct_tile_list = _get_tile_list(zct_list, output_shape, max_plane_size)
         tile_generator = pixels.getTiles(zctTileList=zct_tile_list)
         for tile_coord, tile in zip(zct_tile_list, tile_generator):
-            intensities[tile_coord[0],
-                        tile_coord[1],
-                        tile_coord[2],
-                        tile_coord[3][1]:tile_coord[3][1] + tile_coord[3][3],
-                        tile_coord[3][0]:tile_coord[3][0] + tile_coord[3][2]] = tile
+            intensities[
+                tile_coord[0],
+                tile_coord[1],
+                tile_coord[2],
+                tile_coord[3][1] : tile_coord[3][1] + tile_coord[3][3],
+                tile_coord[3][0] : tile_coord[3][0] + tile_coord[3][2],
+            ] = tile
 
     def _get_whole_tiles():
         tile_region = (ranges[4].start, ranges[3].start, len(ranges[4]), len(ranges[3]))
@@ -199,26 +220,40 @@ def _get_planes(image, ranges):
 
     def _get_tiled_tiles():
         zct_tile_list = _get_tile_list(zct_list, output_shape, max_plane_size)
-        shifted_zct_tile_list = [(z, c, t, (x + ranges[4].start, y + ranges[3].start, w, h)) for z, c, t, (x, y, w, h) in zct_tile_list]
+        shifted_zct_tile_list = [
+            (z, c, t, (x + ranges[4].start, y + ranges[3].start, w, h))
+            for z, c, t, (x, y, w, h) in zct_tile_list
+        ]
         tile_generator = pixels.getTiles(zctTileList=shifted_zct_tile_list)
         for tile_coord, tile in zip(zct_tile_list, tile_generator):
-            intensities[tile_coord[0],
-                        tile_coord[1],
-                        tile_coord[2],
-                        tile_coord[3][1]:tile_coord[3][1] + tile_coord[3][3],
-                        tile_coord[3][0]:tile_coord[3][0] + tile_coord[3][2]] = tile
+            intensities[
+                tile_coord[0],
+                tile_coord[1],
+                tile_coord[2],
+                tile_coord[3][1] : tile_coord[3][1] + tile_coord[3][3],
+                tile_coord[3][0] : tile_coord[3][0] + tile_coord[3][2],
+            ] = tile
 
-    output_shape = (len(ranges[0]), len(ranges[1]), len(ranges[2]), len(ranges[3]), len(ranges[4]))
+    output_shape = (
+        len(ranges[0]),
+        len(ranges[1]),
+        len(ranges[2]),
+        len(ranges[3]),
+        len(ranges[4]),
+    )
     nr_planes = output_shape[0] * output_shape[1] * output_shape[2]
     zct_list = list(product(ranges[0], ranges[1], ranges[2]))
 
     pixels = image.getPrimaryPixels()
     data_type = DTYPES_OMERO_TO_NP[pixels.getPixelsType().getValue()]
-    intensities = np.zeros(shape=(nr_planes, output_shape[3], output_shape[4]),
-                           dtype=data_type)
+    intensities = np.zeros(
+        shape=(nr_planes, output_shape[3], output_shape[4]), dtype=data_type
+    )
 
     max_plane_size = image._conn.getMaxPlaneSize()
-    if output_shape[4] < max_plane_size[0] and output_shape[3] < max_plane_size[1]:  # fits in message size
+    if (
+        output_shape[4] < max_plane_size[0] and output_shape[3] < max_plane_size[1]
+    ):  # fits in message size
         if image.getSizeX() == output_shape[4] and image.getSizeY() == output_shape[3]:
             _get_whole_planes()
         else:
@@ -241,9 +276,13 @@ def get_shape_intensities(image, shape, zero_edge=False, zero_value="zero"):
     if isinstance(shape, model.RectangleI):
         data = _get_rectangle_intensities(image, shape)
     elif isinstance(shape, model.PolygonI):
-        data = _get_polygon_intensities(image, shape, zero_edge=zero_edge, zero_value=zero_value)
+        data = _get_polygon_intensities(
+            image, shape, zero_edge=zero_edge, zero_value=zero_value
+        )
     else:
-        raise NotImplementedError("only getting rectangle and polygone shape intensities")
+        raise NotImplementedError(
+            "only getting rectangle and polygone shape intensities"
+        )
 
     return data
 
@@ -269,9 +308,7 @@ def _get_rectangle_intensities(image, shape):
 def _get_polygon_intensities(image, shape, zero_edge, zero_value):
     # We max cause marking ROIs in GUI may render some coordinates negative
     shape_points = shape.getPoints()._val
-    shape_points = [
-        tuple(float(c) for c in p.split(',')) for p in shape_points.split()
-    ]
+    shape_points = [tuple(float(c) for c in p.split(",")) for p in shape_points.split()]
 
     image_x_coords = [int(x) for x, y in shape_points]
     image_y_coords = [int(y) for x, y in shape_points]
@@ -293,56 +330,80 @@ def _get_polygon_intensities(image, shape, zero_edge, zero_value):
     data = get_intensities(image=image, x_range=x_range, y_range=y_range)
 
     if zero_edge:
-        fill_y_coords, fill_x_coords = draw.polygon(shape_y_coors, shape_x_coors, data.shape[-2:])
+        fill_y_coords, fill_x_coords = draw.polygon(
+            shape_y_coors, shape_x_coors, data.shape[-2:]
+        )
 
         if zero_value == "zero":
             masked_data = np.zeros(data.shape, dtype=data.dtype)
         elif zero_value == "min":
             masked_data = np.full(data.shape, fill_value=data.min())
 
-        masked_data[..., fill_y_coords, fill_x_coords] = data[..., fill_y_coords, fill_x_coords]
+        masked_data[..., fill_y_coords, fill_x_coords] = data[
+            ..., fill_y_coords, fill_x_coords
+        ]
 
         return masked_data
     else:
         return data
 
 
-
 ############# CREATING IMAGES ####################
 
-def create_image_copy(connection,
-                      source_image_id,
-                      channel_list=None,
-                      image_name=None,
-                      image_description=None,
-                      size_x=None, size_y=None, size_z=None, size_t=None):
+
+def create_image_copy(
+    connection,
+    source_image_id,
+    channel_list=None,
+    image_name=None,
+    image_description=None,
+    size_x=None,
+    size_y=None,
+    size_z=None,
+    size_t=None,
+):
     """Creates a copy of an existing OMERO image using all the metadata but not the pixels values.
     The parameter values will override the ones of the original image"""
     pixels_service = connection.getPixelsService()
 
     if channel_list is None:
-        source_image = connection.getObject('Image', source_image_id)
+        source_image = connection.getObject("Image", source_image_id)
         channel_list = list(range(source_image.getSizeC()))
 
-    image_id = pixels_service.copyAndResizeImage(imageId=source_image_id,
-                                                 sizeX=rtypes.rint(size_x),
-                                                 sizeY=rtypes.rint(size_y),
-                                                 sizeZ=rtypes.rint(size_z),
-                                                 sizeT=rtypes.rint(size_t),
-                                                 channelList=channel_list,
-                                                 methodology=image_name,
-                                                 copyStats=False)
+    image_id = pixels_service.copyAndResizeImage(
+        imageId=source_image_id,
+        sizeX=rtypes.rint(size_x),
+        sizeY=rtypes.rint(size_y),
+        sizeZ=rtypes.rint(size_z),
+        sizeT=rtypes.rint(size_t),
+        channelList=channel_list,
+        methodology=image_name,
+        copyStats=False,
+    )
 
     new_image = connection.getObject("Image", image_id)
 
-    if image_description is not None:  # Description is not provided as an override option in the OMERO interface
+    if (
+        image_description is not None
+    ):  # Description is not provided as an override option in the OMERO interface
         new_image.setDescription(image_description)
         new_image.save()
 
     return new_image
 
 
-def create_image(connection, image_name, size_x, size_y, size_z, size_t, size_c, data_type, channel_labels=None, image_description=None):
+def create_image(
+    connection,
+    image_name,
+    size_x,
+    size_y,
+    size_z,
+    size_t,
+    size_c,
+    data_type,
+    channel_labels=None,
+    image_description=None,
+):
     """Creates an OMERO empty image from scratch"""
     pixels_service = connection.getPixelsService()
     query_service = connection.getQueryService()
@@ -353,20 +414,24 @@ def create_image(connection, image_name, size_x, size_y, size_z, size_t, size_c,
         pixel_type = DTYPES_NP_TO_OMERO[data_type]
 
     pixels_type = query_service.findByQuery(
-        "from PixelsType as p where p.value='%s'" % pixel_type, None)
+        "from PixelsType as p where p.value='%s'" % pixel_type, None
+    )
     if pixels_type is None:
         raise Exception(
             "Cannot create an image in omero from numpy array "
-            "with dtype: %s" % data_type)
+            "with dtype: %s" % data_type
+        )
 
-    image_id = pixels_service.createImage(sizeX=size_x,
-                                          sizeY=size_y,
-                                          sizeZ=size_z,
-                                          sizeT=size_t,
-                                          channelList=list(range(size_c)),
-                                          pixelsType=pixels_type,
-                                          name=image_name,
-                                          description=image_description)
+    image_id = pixels_service.createImage(
+        sizeX=size_x,
+        sizeY=size_y,
+        sizeZ=size_z,
+        sizeT=size_t,
+        channelList=list(range(size_c)),
+        pixelsType=pixels_type,
+        name=image_name,
+        description=image_description,
+    )
 
     new_image = connection.getObject("Image", image_id.getValue())
 
@@ -376,32 +441,46 @@ def create_image(connection, image_name, size_x, size_y, size_z, size_t, size_c,
     return new_image
 
 
-def _create_image_whole(connection, data, image_name, image_description=None, dataset=None, channel_list=None, source_image_id=None):
+def _create_image_whole(
+    connection,
+    data,
+    image_name,
+    image_description=None,
+    dataset=None,
+    channel_list=None,
+    source_image_id=None,
+):
+    zct_generator = (
+        data[z, c, t, :, :]
+        for z, c, t in product(
+            range(data.shape[0]), range(data.shape[1]), range(data.shape[2])
+        )
+    )
 
-    zct_generator = (data[z, c, t, :, :] for z, c, t in product(range(data.shape[0]),
-                                                                range(data.shape[1]),
-                                                                range(data.shape[2])))
-
-    return connection.createImageFromNumpySeq(zctPlanes=zct_generator,
-                                              imageName=image_name,
-                                              sizeZ=data.shape[0],
-                                              sizeC=data.shape[1],
-                                              sizeT=data.shape[2],
-                                              description=image_description,
-                                              dataset=dataset,
-                                              channelList=channel_list,
-                                              sourceImageId=source_image_id)
+    return connection.createImageFromNumpySeq(
+        zctPlanes=zct_generator,
+        imageName=image_name,
+        sizeZ=data.shape[0],
+        sizeC=data.shape[1],
+        sizeT=data.shape[2],
+        description=image_description,
+        dataset=dataset,
+        channelList=channel_list,
+        sourceImageId=source_image_id,
+    )
 
 
-def create_image_from_numpy_array(connection,
-                                  data,
-                                  image_name,
-                                  image_description=None,
-                                  channel_labels=None,
-                                  dataset=None,
-                                  source_image_id=None,
-                                  channels_list=None,
-                                  force_whole_planes=False):
+def create_image_from_numpy_array(
+    connection,
+    data,
+    image_name,
+    image_description=None,
+    channel_labels=None,
+    dataset=None,
+    source_image_id=None,
+    channels_list=None,
+    force_whole_planes=False,
+):
     """
     Creates a new image in OMERO from a ndarray.
     :param channel_labels:
@@ -416,70 +495,84 @@ def create_image_from_numpy_array(connection,
     :return:
     """
 
-    zct_list = list(product(range(data.shape[0]), range(data.shape[1]), range(data.shape[2])))
+    zct_list = list(
+        product(range(data.shape[0]), range(data.shape[1]), range(data.shape[2]))
+    )
     zct_generator = (data[z, c, t, :, :] for z, c, t in zct_list)
 
     # Verify if the image must be tiled
     max_plane_size = connection.getMaxPlaneSize()
-    if force_whole_planes or (data.shape[-1] < max_plane_size[-1] and data.shape[-2] < max_plane_size[-2]):
+    if force_whole_planes or (
+        data.shape[-1] < max_plane_size[-1] and data.shape[-2] < max_plane_size[-2]
+    ):
         # Image is small enough to fill it with full planes
-        new_image = connection.createImageFromNumpySeq(zctPlanes=zct_generator,
-                                                       imageName=image_name,
-                                                       sizeZ=data.shape[0],
-                                                       sizeC=data.shape[1],
-                                                       sizeT=data.shape[2],
-                                                       description=image_description,
-                                                       dataset=dataset,
-                                                       sourceImageId=source_image_id,
-                                                       channelList=channels_list)
+        new_image = connection.createImageFromNumpySeq(
+            zctPlanes=zct_generator,
+            imageName=image_name,
+            sizeZ=data.shape[0],
+            sizeC=data.shape[1],
+            sizeT=data.shape[2],
+            description=image_description,
+            dataset=dataset,
+            sourceImageId=source_image_id,
+            channelList=channels_list,
+        )
 
     else:
         zct_tile_list = _get_tile_list(zct_list, data.shape, max_plane_size)
 
         if source_image_id is not None:
-            new_image = create_image_copy(connection, source_image_id,
-                                          image_name=image_name,
-                                          image_description=image_description,
-                                          size_x=data.shape[-1],
-                                          size_y=data.shape[-2],
-                                          size_z=data.shape[0],
-                                          size_t=data.shape[2],
-                                          channel_list=channels_list)
+            new_image = create_image_copy(
+                connection,
+                source_image_id,
+                image_name=image_name,
+                image_description=image_description,
+                size_x=data.shape[-1],
+                size_y=data.shape[-2],
+                size_z=data.shape[0],
+                size_t=data.shape[2],
+                channel_list=channels_list,
+            )
 
         else:
-            new_image = create_image(connection,
-                                     image_name=image_name,
-                                     size_x=data.shape[-1],
-                                     size_y=data.shape[-2],
-                                     size_z=data.shape[0],
-                                     size_t=data.shape[2],
-                                     size_c=data.shape[1],
-                                     data_type=data.dtype.name,
-                                     image_description=image_description)
+            new_image = create_image(
+                connection,
+                image_name=image_name,
+                size_x=data.shape[-1],
+                size_y=data.shape[-2],
+                size_z=data.shape[0],
+                size_t=data.shape[2],
+                size_c=data.shape[1],
+                data_type=data.dtype.name,
+                image_description=image_description,
+            )
 
         raw_pixel_store = connection.c.sf.createRawPixelsStore()
         pixels_id = new_image.getPrimaryPixels().getId()
         raw_pixel_store.setPixelsId(pixels_id, True)
 
         for tile_coord in zct_tile_list:
-            tile_data = data[tile_coord[0],
-                             tile_coord[1],
-                             tile_coord[2],
-                             tile_coord[3][1]:tile_coord[3][1] + tile_coord[3][3],
-                             tile_coord[3][0]:tile_coord[3][0] + tile_coord[3][2]]
+            tile_data = data[
+                tile_coord[0],
+                tile_coord[1],
+                tile_coord[2],
+                tile_coord[3][1] : tile_coord[3][1] + tile_coord[3][3],
+                tile_coord[3][0] : tile_coord[3][0] + tile_coord[3][2],
+            ]
             tile_data = tile_data.byteswap()
             bin_tile_data = tile_data.tostring()
 
-            raw_pixel_store.setTile(bin_tile_data,
-                                    tile_coord[0],
-                                    tile_coord[1],
-                                    tile_coord[2],
-                                    tile_coord[3][0],
-                                    tile_coord[3][1],
-                                    tile_coord[3][2],
-                                    tile_coord[3][3],
-                                    connection.SERVICE_OPTS
-                                    )
+            raw_pixel_store.setTile(
+                bin_tile_data,
+                tile_coord[0],
+                tile_coord[1],
+                tile_coord[2],
+                tile_coord[3][0],
+                tile_coord[3][1],
+                tile_coord[3][2],
+                tile_coord[3][3],
+                connection.SERVICE_OPTS,
+            )
 
         if dataset is not None:
             link_image_to_dataset(connection, new_image, dataset)
@@ -510,9 +603,12 @@ def _get_tile_list(zct_list, data_shape, tile_size):
 
 ############### LINKING PROJECTS, DATASETS AND IMAGES ##############
 
+
 def link_dataset_to_project(connection, dataset, project):
     link = model.ProjectDatasetLinkI()
-    link.setParent(model.ProjectI(project.getId(), False))  # linking to a loaded project might raise exception
+    link.setParent(
+        model.ProjectI(project.getId(), False)
+    )  # linking to a loaded project might raise exception
     link.setChild(model.DatasetI(dataset.getId(), False))
     connection.getUpdateService().saveObject(link)
 
@@ -529,6 +625,7 @@ def link_image_to_dataset(connection, image, dataset):
 
 
 ############### Creating projects and datasets #####################
+
 
 def create_project(connection, name, description=None):
     new_project = gw.ProjectWrapper(connection, model.ProjectI())
@@ -554,7 +651,10 @@ def create_dataset(connection, name, description=None, parent_project=None):
 
 ############### Deleting projects and datasets #####################
 
-def _delete_object(conn, object_type, objects, delete_annotations, delete_children, wait, callback=None):
+
+def _delete_object(
+    conn, object_type, objects, delete_annotations, delete_children, wait, callback=None
+):
     if not isinstance(objects, list) and not isinstance(object, int):
         obj_ids = [objects.getId()]
     elif not isinstance(objects, list):
@@ -565,11 +665,13 @@ def _delete_object(conn, object_type, objects, delete_annotations, delete_childr
         obj_ids = [o.getId() for o in objects]
 
     try:
-        conn.deleteObjects(object_type,
-                           obj_ids=obj_ids,
-                           deleteAnns=delete_annotations,
-                           deleteChildren=delete_children,
-                           wait=wait)
+        conn.deleteObjects(
+            object_type,
+            obj_ids=obj_ids,
+            deleteAnns=delete_annotations,
+            deleteChildren=delete_children,
+            wait=wait,
+        )
         return True
     except Exception as e:
         print(e)
@@ -577,14 +679,17 @@ def _delete_object(conn, object_type, objects, delete_annotations, delete_childr
 
 
 def delete_project(conn, projects, delete_annotations=False, delete_children=False):
-    _delete_object(conn=conn,
-                   object_type="Project",
-                   objects=projects,
-                   delete_annotations=delete_annotations,
-                   delete_children=delete_children,
-                   wait=False)
+    _delete_object(
+        conn=conn,
+        object_type="Project",
+        objects=projects,
+        delete_annotations=delete_annotations,
+        delete_children=delete_children,
+        wait=False,
+    )
 
-  # Retrieve callback and wait until delete completes
+
+# Retrieve callback and wait until delete completes
 
 # # This is not necessary for the Delete to complete. Can be used
 # # if you want to know when delete is finished or if there were any errors
@@ -602,9 +707,10 @@ def delete_project(conn, projects, delete_annotations=False, delete_children=Fal
 
 ############### Getting information on projects and datasets ###############
 
+
 def get_all_projects(conn, opts=None):
     if opts is None:
-        opts = {'order_by': 'loser(obj.name)'}
+        opts = {"order_by": "loser(obj.name)"}
     return conn.getObjects("Project", opts=opts)
 
 
@@ -617,11 +723,11 @@ def get_dataset_images(dataset):
 
 
 def get_orphan_datasets(conn):
-    return conn.getObjects("Dataset", opts={'orphaned': True})
+    return conn.getObjects("Dataset", opts={"orphaned": True})
 
 
 def get_orphan_images(conn):
-    return conn.getObjects("Image", opts={'orphaned': True})
+    return conn.getObjects("Image", opts={"orphaned": True})
 
 
 def get_tagged_images_in_dataset(dataset, tag_id):
@@ -636,7 +742,9 @@ def get_tagged_images_in_dataset(dataset, tag_id):
 # In this section we give some convenience functions to send data back to OMERO #
 def create_annotation_comment(connection, comment_string, namespace=None):
     if namespace is None:
-        namespace = metadata.NSCLIENTMAPANNOTATION  # This makes the annotation editable in the client
+        namespace = (
+            metadata.NSCLIENTMAPANNOTATION
+        )  # This makes the annotation editable in the client
     comment_ann = gw.CommentAnnotationWrapper(connection)
     comment_ann.setValue(comment_string)
     comment_ann.setNs(namespace)
@@ -647,7 +755,9 @@ def create_annotation_comment(connection, comment_string, namespace=None):
 
 def label_channels(image, labels):
     if len(labels) != image.getSizeC():
-        raise ValueError('The length of the channel labels is not of the same size as the size of the c dimension')
+        raise ValueError(
+            "The length of the channel labels is not of the same size as the size of the c dimension"
+        )
     for label, channel in zip(labels, image.getChannels(noRE=True)):
         logical_channel = channel.getLogicalChannel()
         logical_channel.setName(label)
@@ -655,7 +765,7 @@ def label_channels(image, labels):
 
 
 def link_annotation_tag(connection, omero_obj, tag_id):
-    tag = connection.getObject('Annotation', tag_id)
+    tag = connection.getObject("Annotation", tag_id)
     link_annotation(omero_obj, tag)
 
 
@@ -686,19 +796,27 @@ def _dict_to_map(dictionary):
     return [[k, _serialize_map_value(v)] for k, v in dictionary.items()]
 
 
-def create_annotation_map(connection, annotation, annotation_name=None, annotation_description=None, namespace=None):
+def create_annotation_map(
+    connection,
+    annotation,
+    annotation_name=None,
+    annotation_description=None,
+    namespace=None,
+):
     """Creates a map_annotation for OMERO. It can create a map annotation from a
     dictionary or from a list of 2 elements list.
     """
     if namespace is None:
-        namespace = metadata.NSCLIENTMAPANNOTATION  # This makes the annotation editable in the client
+        namespace = (
+            metadata.NSCLIENTMAPANNOTATION
+        )  # This makes the annotation editable in the client
     # Convert a dictionary into a map annotation
     if isinstance(annotation, dict):
         annotation = _dict_to_map(annotation)
     elif isinstance(annotation, list):
         pass  # TODO: assert that the list is compliant with the OMERO format
     else:
-        raise Exception(f'Could not convert {annotation} to a map_annotation')
+        raise Exception(f"Could not convert {annotation} to a map_annotation")
 
     map_ann = gw.MapAnnotationWrapper(connection)
     if annotation_name is not None:
@@ -714,13 +832,14 @@ def create_annotation_map(connection, annotation, annotation_name=None, annotati
     return map_ann
 
 
-def create_annotation_file_local(connection, file_path, namespace=None, description=None):
+def create_annotation_file_local(
+    connection, file_path, namespace=None, description=None
+):
     """Creates a file annotation and uploads it to OMERO"""
 
-    return connection.createFileAnnfromLocalFile(localPath=file_path,
-                                                 mimetype=None,
-                                                 ns=namespace,
-                                                 desc=description)
+    return connection.createFileAnnfromLocalFile(
+        localPath=file_path, mimetype=None, ns=namespace, desc=description
+    )
 
 
 def _create_column(data_type, kwargs):
@@ -732,16 +851,22 @@ def _create_column(data_type, kwargs):
 def _create_table(column_names, columns_descriptions, values, types=None):
     # validate lengths
     if not len(column_names) == len(columns_descriptions) == len(values):
-        raise IndexError('Error creating table. Names, description and values not matching or empty.')
+        raise IndexError(
+            "Error creating table. Names, description and values not matching or empty."
+        )
     if types is not None and len(types) != len(values):
-        raise IndexError('Error creating table. Types and values lengths are not matching.')
+        raise IndexError(
+            "Error creating table. Types and values lengths are not matching."
+        )
     # TODO: Verify implementation of empty table creation
 
     columns = []
     for i, (cn, cd, v) in enumerate(zip(column_names, columns_descriptions, values)):
         # Verify column names and descriptions are strings
         if not type(cn) == type(cd) == str:
-            raise TypeError(f'Types of column name ({type(cn)}) or description ({type(cd)}) is not string')
+            raise TypeError(
+                f"Types of column name ({type(cn)}) or description ({type(cd)}) is not string"
+            )
 
         if types is not None:
             v_type = types[i]
@@ -752,81 +877,100 @@ def _create_table(column_names, columns_descriptions, values, types=None):
         #     raise TypeError(f'Not all elements in column {cn} are of the same type')
 
         if v_type == str:
-            size = len(max(v, key=len)) * 2  # We assume here that the max size is double of what we really have...
-            args = {'name': cn, 'description': cd, 'size': size, 'values': v}
-            columns.append(_create_column(data_type='string', kwargs=args))
+            size = (
+                len(max(v, key=len)) * 2
+            )  # We assume here that the max size is double of what we really have...
+            args = {"name": cn, "description": cd, "size": size, "values": v}
+            columns.append(_create_column(data_type="string", kwargs=args))
         elif v_type == int:
             if cn.lower() in ["image", "imageid", "image id", "image_id"]:
-                args = {'name': cn, 'values': v}
-                columns.append(_create_column(data_type='image', kwargs=args))
+                args = {"name": cn, "values": v}
+                columns.append(_create_column(data_type="image", kwargs=args))
             elif cn.lower() in ["dataset", "datasetid", "dataset id", "dataset_id"]:
-                args = {'name': cn, 'values': v}
-                columns.append(_create_column(data_type='dataset', kwargs=args))
+                args = {"name": cn, "values": v}
+                columns.append(_create_column(data_type="dataset", kwargs=args))
             elif cn.lower() in ["plate", "plateid", "plate id", "plate_id"]:
-                args = {'name': cn, 'values': v}
-                columns.append(_create_column(data_type='plate', kwargs=args))
+                args = {"name": cn, "values": v}
+                columns.append(_create_column(data_type="plate", kwargs=args))
             elif cn.lower() in ["well", "wellid", "well id", "well_id"]:
-                args = {'name': cn, 'values': v}
-                columns.append(_create_column(data_type='well', kwargs=args))
+                args = {"name": cn, "values": v}
+                columns.append(_create_column(data_type="well", kwargs=args))
             elif cn.lower() in ["roi", "roiid", "roi id", "roi_id"]:
-                args = {'name': cn, 'values': v}
-                columns.append(_create_column(data_type='roi', kwargs=args))
+                args = {"name": cn, "values": v}
+                columns.append(_create_column(data_type="roi", kwargs=args))
             elif cn.lower() in ["mask", "maskid", "mask id", "mask_id"]:
-                args = {'name': cn, 'values': v}
-                columns.append(_create_column(data_type='mask', kwargs=args))
+                args = {"name": cn, "values": v}
+                columns.append(_create_column(data_type="mask", kwargs=args))
             elif cn.lower() in ["file", "fileid", "file id", "file_id"]:
-                args = {'name': cn, 'values': v}
-                columns.append(_create_column(data_type='file', kwargs=args))
+                args = {"name": cn, "values": v}
+                columns.append(_create_column(data_type="file", kwargs=args))
             else:
-                args = {'name': cn, 'description': cd, 'values': v}
-                columns.append(_create_column(data_type='long', kwargs=args))
+                args = {"name": cn, "description": cd, "values": v}
+                columns.append(_create_column(data_type="long", kwargs=args))
         elif v_type == float:
-            args = {'name': cn, 'description': cd, 'values': v}
-            columns.append(_create_column(data_type='double', kwargs=args))
+            args = {"name": cn, "description": cd, "values": v}
+            columns.append(_create_column(data_type="double", kwargs=args))
         elif v_type == bool:
-            args = {'name': cn, 'description': cd, 'values': v}
-            columns.append(_create_column(data_type='string', kwargs=args))
+            args = {"name": cn, "description": cd, "values": v}
+            columns.append(_create_column(data_type="string", kwargs=args))
         elif v_type in [gw.ImageWrapper, model.ImageI]:
-            args = {'name': cn, 'description': cd, 'values': [img.getId() for img in v]}
-            columns.append(_create_column(data_type='image', kwargs=args))
+            args = {"name": cn, "description": cd, "values": [img.getId() for img in v]}
+            columns.append(_create_column(data_type="image", kwargs=args))
         elif v_type in [gw.RoiWrapper, model.RoiI]:
-            args = {'name': cn, 'description': cd, 'values': [roi.getId() for roi in v]}
-            columns.append(_create_column(data_type='roi', kwargs=args))
+            args = {"name": cn, "description": cd, "values": [roi.getId() for roi in v]}
+            columns.append(_create_column(data_type="roi", kwargs=args))
         elif isinstance(v_type, (list, tuple)):  # We are creating array columns
-
             # Verify that every element in the 'array' is the same length and type
             if any(len(x) != len(v[0]) for x in v):
-                raise IndexError(f'Not all elements in column {cn} have the same length')
+                raise IndexError(
+                    f"Not all elements in column {cn} have the same length"
+                )
             if not all(all(isinstance(x, type(v[0][0])) for x in a) for a in v):
-                raise TypeError(f'Not all the elements in the array column {cn} are of the same type')
+                raise TypeError(
+                    f"Not all the elements in the array column {cn} are of the same type"
+                )
 
-            args = {'name': cn, 'description': cd, 'size': len(v[0]), 'values': v}
+            args = {"name": cn, "description": cd, "size": len(v[0]), "values": v}
             if v_type[0] == int:
-                columns.append(_create_column(data_type='long_array', kwargs=args))
+                columns.append(_create_column(data_type="long_array", kwargs=args))
             elif v_type[0] == float:  # We are casting all floats to doubles
-                columns.append(_create_column(data_type='double_array', kwargs=args))
+                columns.append(_create_column(data_type="double_array", kwargs=args))
             else:
-                raise TypeError(f'Error on column {cn}. Datatype not implemented for array columns')
+                raise TypeError(
+                    f"Error on column {cn}. Datatype not implemented for array columns"
+                )
         else:
-            raise TypeError(f'Could not detect column datatype for column {cn}')
+            raise TypeError(f"Could not detect column datatype for column {cn}")
 
     return columns
 
 
-def create_annotation_table(connection, table_name, column_names, column_descriptions, values, types=None, namespace=None,
-                            table_description=None):
+def create_annotation_table(
+    connection,
+    table_name,
+    column_names,
+    column_descriptions,
+    values,
+    types=None,
+    namespace=None,
+    table_description=None,
+):
     """Creates a table annotation from a list of lists"""
 
     column_length = len(values[0])
     if any(len(l) != column_length for l in values):
-        raise ValueError('The columns have different lengths')
+        raise ValueError("The columns have different lengths")
 
-    table_name = f'{table_name}_{"".join([choice(ascii_letters) for _ in range(32)])}.h5'
+    table_name = (
+        f'{table_name}_{"".join([choice(ascii_letters) for _ in range(32)])}.h5'
+    )
 
-    columns = _create_table(column_names=column_names,
-                            columns_descriptions=column_descriptions,
-                            values=values,
-                            types=types)
+    columns = _create_table(
+        column_names=column_names,
+        columns_descriptions=column_descriptions,
+        values=values,
+        types=types,
+    )
     resources = connection.c.sf.sharedResources()
     repository_id = resources.repositories().descriptions[0].getId().getValue()
     table = resources.newTable(repository_id, table_name)
@@ -838,7 +982,9 @@ def create_annotation_table(connection, table_name, column_names, column_descrip
     file_ann = gw.FileAnnotationWrapper(connection)
     file_ann.setNs(namespace)
     file_ann.setDescription(table_description)
-    file_ann.setFile(model.OriginalFileI(original_file.id.val, False))  # TODO: try to get this with a wrapper
+    file_ann.setFile(
+        model.OriginalFileI(original_file.id.val, False)
+    )  # TODO: try to get this with a wrapper
     file_ann.save()
     return file_ann
 
@@ -865,22 +1011,25 @@ def _create_roi(connection, image, shapes, name, description):
 
 
 def _rgba_to_int(red, green, blue, alpha=255):
-    """ Return the color as an Integer in RGBA encoding """
+    """Return the color as an Integer in RGBA encoding"""
     r = red << 24
     g = green << 16
     b = blue << 8
     a = alpha
     rgba_int = sum([r, g, b, a])
-    if rgba_int > (2**31-1):       # convert to signed 32-bit int
+    if rgba_int > (2**31 - 1):  # convert to signed 32-bit int
         rgba_int = rgba_int - 2**32
 
     return rgba_int
 
 
-def _set_shape_properties(shape, name=None,
-                          fill_color=(10, 10, 10, 10),
-                          stroke_color=(255, 255, 255, 255),
-                          stroke_width=1, ):
+def _set_shape_properties(
+    shape,
+    name=None,
+    fill_color=(10, 10, 10, 10),
+    stroke_color=(255, 255, 255, 255),
+    stroke_width=1,
+):
     if name:
         shape.setTextValue(rtypes.rstring(name))
     shape.setFillColor(rtypes.rint(_rgba_to_int(*fill_color)))
@@ -888,8 +1037,17 @@ def _set_shape_properties(shape, name=None,
     shape.setStrokeWidth(LengthI(stroke_width, enums.UnitsLength.PIXEL))
 
 
-def create_shape_point(x_pos, y_pos, z_pos=None, c_pos=None, t_pos=None, name=None,
-                       stroke_color=(255, 255, 255, 255), fill_color=(10, 10, 10, 20), stroke_width=1):
+def create_shape_point(
+    x_pos,
+    y_pos,
+    z_pos=None,
+    c_pos=None,
+    t_pos=None,
+    name=None,
+    stroke_color=(255, 255, 255, 255),
+    fill_color=(10, 10, 10, 20),
+    stroke_width=1,
+):
     point = model.PointI()
     point.x = rtypes.rdouble(x_pos)
     point.y = rtypes.rdouble(y_pos)
@@ -899,17 +1057,29 @@ def create_shape_point(x_pos, y_pos, z_pos=None, c_pos=None, t_pos=None, name=No
         point.theC = rtypes.rint(c_pos)
     if t_pos is not None:
         point.theT = rtypes.rint(t_pos)
-    _set_shape_properties(shape=point,
-                          name=name,
-                          stroke_color=stroke_color,
-                          stroke_width=stroke_width,
-                          fill_color=fill_color)
+    _set_shape_properties(
+        shape=point,
+        name=name,
+        stroke_color=stroke_color,
+        stroke_width=stroke_width,
+        fill_color=fill_color,
+    )
 
     return point
 
 
-def create_shape_line(x1_pos, y1_pos, x2_pos, y2_pos, c_pos=None, z_pos=None, t_pos=None,
-                      name=None, stroke_color=(255, 255, 255, 255), stroke_width=1):
+def create_shape_line(
+    x1_pos,
+    y1_pos,
+    x2_pos,
+    y2_pos,
+    c_pos=None,
+    z_pos=None,
+    t_pos=None,
+    name=None,
+    stroke_color=(255, 255, 255, 255),
+    stroke_width=1,
+):
     line = model.LineI()
     line.x1 = rtypes.rdouble(x1_pos)
     line.x2 = rtypes.rdouble(x2_pos)
@@ -919,17 +1089,24 @@ def create_shape_line(x1_pos, y1_pos, x2_pos, y2_pos, c_pos=None, z_pos=None, t_
     line.theT = rtypes.rint(t_pos)
     if c_pos is not None:
         line.theC = rtypes.rint(c_pos)
-    _set_shape_properties(line, name=name,
-                          stroke_color=stroke_color,
-                          stroke_width=stroke_width)
+    _set_shape_properties(
+        line, name=name, stroke_color=stroke_color, stroke_width=stroke_width
+    )
     return line
 
 
-def create_shape_rectangle(x_pos, y_pos, width, height, z_pos, t_pos,
-                           rectangle_name=None,
-                           fill_color=(10, 10, 10, 255),
-                           stroke_color=(255, 255, 255, 255),
-                           stroke_width=1):
+def create_shape_rectangle(
+    x_pos,
+    y_pos,
+    width,
+    height,
+    z_pos,
+    t_pos,
+    rectangle_name=None,
+    fill_color=(10, 10, 10, 255),
+    stroke_color=(255, 255, 255, 255),
+    stroke_width=1,
+):
     rect = model.RectangleI()
     rect.x = rtypes.rdouble(x_pos)
     rect.y = rtypes.rdouble(y_pos)
@@ -937,18 +1114,28 @@ def create_shape_rectangle(x_pos, y_pos, width, height, z_pos, t_pos,
     rect.height = rtypes.rdouble(height)
     rect.theZ = rtypes.rint(z_pos)
     rect.theT = rtypes.rint(t_pos)
-    _set_shape_properties(shape=rect, name=rectangle_name,
-                          fill_color=fill_color,
-                          stroke_color=stroke_color,
-                          stroke_width=stroke_width)
+    _set_shape_properties(
+        shape=rect,
+        name=rectangle_name,
+        fill_color=fill_color,
+        stroke_color=stroke_color,
+        stroke_width=stroke_width,
+    )
     return rect
 
 
-def create_shape_ellipse(x_pos, y_pos, x_radius, y_radius, z_pos, t_pos,
-                         ellipse_name=None,
-                         fill_color=(10, 10, 10, 255),
-                         stroke_color=(255, 255, 255, 255),
-                         stroke_width=1):
+def create_shape_ellipse(
+    x_pos,
+    y_pos,
+    x_radius,
+    y_radius,
+    z_pos,
+    t_pos,
+    ellipse_name=None,
+    fill_color=(10, 10, 10, 255),
+    stroke_color=(255, 255, 255, 255),
+    stroke_width=1,
+):
     ellipse = model.EllipseI()
     ellipse.setX(rtypes.rdouble(x_pos))
     ellipse.setY(rtypes.rdouble(y_pos))  # TODO: setters and getters everywhere
@@ -956,33 +1143,45 @@ def create_shape_ellipse(x_pos, y_pos, x_radius, y_radius, z_pos, t_pos,
     ellipse.radiusY = rtypes.rdouble(y_radius)
     ellipse.theZ = rtypes.rint(z_pos)
     ellipse.theT = rtypes.rint(t_pos)
-    _set_shape_properties(ellipse, name=ellipse_name,
-                          fill_color=fill_color,
-                          stroke_color=stroke_color,
-                          stroke_width=stroke_width)
+    _set_shape_properties(
+        ellipse,
+        name=ellipse_name,
+        fill_color=fill_color,
+        stroke_color=stroke_color,
+        stroke_width=stroke_width,
+    )
     return ellipse
 
 
-def create_shape_polygon(points_list, z_pos, t_pos,
-                         polygon_name=None,
-                         fill_color=(10, 10, 10, 255),
-                         stroke_color=(255, 255, 255, 255),
-                         stroke_width=1):
+def create_shape_polygon(
+    points_list,
+    z_pos,
+    t_pos,
+    polygon_name=None,
+    fill_color=(10, 10, 10, 255),
+    stroke_color=(255, 255, 255, 255),
+    stroke_width=1,
+):
     polygon = model.PolygonI()
-    points_str = "".join(["".join([str(x), ',', str(y), ', ']) for x, y in points_list])[:-2]
+    points_str = "".join(
+        ["".join([str(x), ",", str(y), ", "]) for x, y in points_list]
+    )[:-2]
     polygon.points = rtypes.rstring(points_str)
     polygon.theZ = rtypes.rint(z_pos)
     polygon.theT = rtypes.rint(t_pos)
-    _set_shape_properties(polygon, name=polygon_name,
-                          fill_color=fill_color,
-                          stroke_color=stroke_color,
-                          stroke_width=stroke_width)
+    _set_shape_properties(
+        polygon,
+        name=polygon_name,
+        fill_color=fill_color,
+        stroke_color=stroke_color,
+        stroke_width=stroke_width,
+    )
     return polygon
 
 
-def create_shape_mask(mask_array, x_pos, y_pos, z_pos, t_pos,
-                      mask_name=None,
-                      fill_color=(0, 255, 0, 120)):
+def create_shape_mask(
+    mask_array, x_pos, y_pos, z_pos, t_pos, mask_name=None, fill_color=(0, 255, 0, 120)
+):
     mask = model.MaskI()
     mask.setX(rtypes.rdouble(x_pos))
     mask.setY(rtypes.rdouble(y_pos))

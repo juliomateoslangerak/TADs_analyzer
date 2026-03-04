@@ -11,12 +11,14 @@ from tifffile import tifffile
 INPUT_DIR = "/home/julio/Documents/data-annotation/Image-Data-Annotation/assays/RAD21-AID_AUX-CTL"
 
 try:
-    conn = BlitzGateway(username=input('username: '),
-        passwd=getpass('password: '),
+    conn = BlitzGateway(
+        username=input("username: "),
+        passwd=getpass("password: "),
         host="bioimage.france-bioinformatique.fr",
         port=4075,
         # group="Cavalli Lab",
-        secure=True)
+        secure=True,
+    )
     conn.connect()
 
     updateService = conn.getUpdateService()
@@ -33,8 +35,8 @@ try:
         return updateService.saveAndReturnObject(roi)
 
     def masks_from_labels_image_3d(
-            labels_3d, rgba=None, c=None, t=None, text=None,
-            raise_on_no_mask=True):
+        labels_3d, rgba=None, c=None, t=None, text=None, raise_on_no_mask=True
+    ):
         """
         Create a mask shape from a binary image (background=0)
 
@@ -64,7 +66,7 @@ try:
                 w = max(xmask) - x0 + 1
                 y0 = min(ymask)
                 h = max(ymask) - y0 + 1
-                submask = bin_img[:, y0:(y0 + h), x0:(x0 + w)]
+                submask = bin_img[:, y0 : (y0 + h), x0 : (x0 + w)]
             else:
                 if raise_on_no_mask:
                     raise omero_rois.NoMaskFound()
@@ -104,16 +106,16 @@ try:
 
         return rois
 
-
     def rois_from_labels_3d(img, labels_3d, rgba, c=None, t=None, text=None):
-        rois = masks_from_labels_image_3d(labels_3d, rgba=rgba, c=c, t=t,
-                                          raise_on_no_mask=False)
+        rois = masks_from_labels_image_3d(
+            labels_3d, rgba=rgba, c=c, t=t, raise_on_no_mask=False
+        )
 
         for label, masks in rois.items():
             if len(masks) > 0:
-                create_roi(img=img, shapes=masks, name=f'{text}_{label}')
+                create_roi(img=img, shapes=masks, name=f"{text}_{label}")
 
-    dataset = conn.getObject('Dataset', int(input("Dataset ID: ")))
+    dataset = conn.getObject("Dataset", int(input("Dataset ID: ")))
 
     images = dataset.listChildren()
 
@@ -123,7 +125,9 @@ try:
 
         # Domains
         try:
-            domains_img = tifffile.imread(os.path.join(INPUT_DIR, f"{image_name[:-9]}_domains-ROIs.ome.tiff"))
+            domains_img = tifffile.imread(
+                os.path.join(INPUT_DIR, f"{image_name[:-9]}_domains-ROIs.ome.tiff")
+            )
             domains_img = domains_img.transpose((1, 0, 2, 3))
             for c, channel_labels in enumerate(domains_img):
                 if c == 0:
@@ -133,17 +137,17 @@ try:
                 else:
                     rgba = (0, 0, 255, 30)
 
-                rois_from_labels_3d(img=image,
-                                    labels_3d=channel_labels,
-                                    rgba=rgba,
-                                    c=c,
-                                    text='domain')
+                rois_from_labels_3d(
+                    img=image, labels_3d=channel_labels, rgba=rgba, c=c, text="domain"
+                )
         except FileNotFoundError:
             pass
 
         # Subdomains
         try:
-            subdomains_img = tifffile.imread(os.path.join(INPUT_DIR, f"{image_name[:-9]}_subdomains-ROIs.ome.tiff"))
+            subdomains_img = tifffile.imread(
+                os.path.join(INPUT_DIR, f"{image_name[:-9]}_subdomains-ROIs.ome.tiff")
+            )
             subdomains_img = subdomains_img.transpose((1, 0, 2, 3))
             for c, channel_labels in enumerate(subdomains_img):
                 if c == 0:
@@ -153,22 +157,25 @@ try:
                 else:
                     rgba = (0, 0, 180, 50)
 
-                rois_from_labels_3d(img=image,
-                                    labels_3d=channel_labels,
-                                    rgba=rgba,
-                                    c=c,
-                                    text='subdomain')
+                rois_from_labels_3d(
+                    img=image,
+                    labels_3d=channel_labels,
+                    rgba=rgba,
+                    c=c,
+                    text="subdomain",
+                )
         except FileNotFoundError:
             pass
 
         # Overlaps
         try:
-            overlap_img = tifffile.imread(os.path.join(INPUT_DIR, f"{image_name[:-9]}_overlap-ROIs.ome.tiff"))
+            overlap_img = tifffile.imread(
+                os.path.join(INPUT_DIR, f"{image_name[:-9]}_overlap-ROIs.ome.tiff")
+            )
             rgba = (0, 0, 255, 80)
-            rois_from_labels_3d(img=image,
-                                labels_3d=overlap_img,
-                                rgba=rgba,
-                                text='overlap')
+            rois_from_labels_3d(
+                img=image, labels_3d=overlap_img, rgba=rgba, text="overlap"
+            )
         except FileNotFoundError:
             pass
 
@@ -177,4 +184,4 @@ except Exception as e:
 
 finally:
     conn.close()
-    print('done')
+    print("done")
