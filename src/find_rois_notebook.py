@@ -1,5 +1,4 @@
 import marimo
-from docutils.nodes import title
 
 __generated_with = "0.18.4"
 app = marimo.App(width="medium")
@@ -18,7 +17,6 @@ def _():
 
 @app.cell
 def _(mo):
-
     analysis_form = mo.md(
         """Fill the analysis parameters:
         

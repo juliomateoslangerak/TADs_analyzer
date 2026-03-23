@@ -42,7 +42,7 @@ def run(assays_directory, image_files_extension, token_sep="_"):
                 table = pd.concat([table, line], ignore_index=True)
 
             for col_name, table_file in merges.items():
-                merge_table = pd.read_csv(os.path.join(".", "meta_data", table_file))
+                merge_table = pd.read_csv(os.path.join("..", "meta_data", table_file))
                 table = pd.merge(
                     table,
                     merge_table,
