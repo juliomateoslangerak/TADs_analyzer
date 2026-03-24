@@ -204,22 +204,40 @@ def _(
                             except AttributeError:
                                 shape_comment = None
 
+                            # Get image dimensions
+                            size_x = image.getSizeX()
+                            size_y = image.getSizeY()
+                            size_z = image.getSizeZ()
+
+                            # Calculate ranges
+                            x_range = (
+                                int(shape.getX().getValue() - analysis_params["roi_size_xy"] / 2),
+                                int(shape.getX().getValue() + analysis_params["roi_size_xy"] / 2)
+                            )
+                            y_range = (
+                                int(shape.getY().getValue() - analysis_params["roi_size_xy"] / 2),
+                                int(shape.getY().getValue() + analysis_params["roi_size_xy"] / 2)
+                            )
+                            z_range = (
+                                int(shape.getTheZ().getValue() - analysis_params["roi_size_z"] / 2),
+                                int(shape.getTheZ().getValue() + analysis_params["roi_size_z"] / 2)
+                            )
+
+                            # Skip if ranges are outside image bounds
+                            if (x_range[0] < 0 or x_range[1] > size_x or
+                                y_range[0] < 0 or y_range[1] > size_y or
+                                z_range[0] < 0 or z_range[1] > size_z):
+                                print(f"ROI {shape_comment} out of bounds, skipping")
+                                continue
+
                             roi_intensities = omero_tb.get_intensities(
                                 image=image,
                                 c_range=data_params["channel"],
-                                x_range=(
-                                    int(shape.getX().getValue() - analysis_params["roi_size_xy"] / 2),
-                                    int(shape.getX().getValue() + analysis_params["roi_size_xy"] / 2)
-                                ),
-                                y_range=(
-                                    int(shape.getY().getValue() - analysis_params["roi_size_xy"] / 2),
-                                    int(shape.getY().getValue() + analysis_params["roi_size_xy"] / 2)
-                                ),
-                                z_range=(
-                                    int(shape.getTheZ().getValue() - analysis_params["roi_size_z"] / 2),
-                                    int(shape.getTheZ().getValue() + analysis_params["roi_size_z"] / 2)
-                                )
+                                x_range=x_range,
+                                y_range=y_range,
+                                z_range=z_range
                             )
+                            roi_intensities = analysis_functions.rescale_SIM(roi_intensities, out_range="uint16")
 
                             voxel_size = omero_tb.get_pixel_size(image, order="ZYX")
 
@@ -239,18 +257,35 @@ def _(
                             rois_df.insert(loc=0, column="image_id", value=image.getId())
                             rois_df.insert(loc=0, column="dataset_id", value=data_params["dataset_id"])
 
-                            omero_rois.masks_from_label_image(
+                            domain_masks = omero_rois.masks_from_label_image(
                                 labelim=domain_labels,
                                 rgba=(0, 255, 0, 100),
                                 c=data_params["channel"],
-                                text=f"Domain: {shape_comment}"
+                                text=f"Domain: {shape_comment}",
+                                raise_on_no_mask=False
                             )
 
-                            omero_rois.masks_from_label_image(
+                            omero_tb.create_roi(
+                                connection=conn,
+                                image=image,
+                                shapes=domain_masks,
+                                name=shape_comment,
+                                description=f"source roi_id: {roi.getId()}",
+                            )
+
+                            subdomain_masks = omero_rois.masks_from_label_image(
                                 labelim=subdomain_labels,
                                 rgba=(255, 0, 0, 100),
                                 c=data_params["channel"],
-                                text=f"Subdomain: {shape_comment}"
+                                text=f"Subdomain: {shape_comment}",
+                            )
+
+                            omero_tb.create_roi(
+                                connection=conn,
+                                image=image,
+                                shapes=subdomain_masks,
+                                name=shape_comment,
+                                description=f"source roi_id: {roi.getId()}",
                             )
 
             except Exception as e:
