@@ -105,6 +105,12 @@ def _(mo, default_analysis_parameters):
         analysis_parameters=mo.ui.dictionary(
             label="Analysis parameters",
             elements={
+                "sigma": mo.ui.number(
+                    value=default_analysis_parameters["sigma"],
+                    label="Sigma",
+                    start=0.0,
+                    stop=10.0,
+                ),
                 "properties": mo.ui.multiselect(
                     options=default_analysis_parameters["properties"],
                     value=default_analysis_parameters["properties"],
