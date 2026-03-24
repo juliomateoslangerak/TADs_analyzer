@@ -11,7 +11,7 @@ from skimage.morphology import remove_small_objects
 from porespy.metrics import regionprops_3D
 
 
-def rescale_SIM(image, bins=256, out_range=None):
+def rescale_SIM(image, bins=1000, out_range=None):
     """Rescale SIM image using modal intensity as the minimum and the datatype
     max as the maximum
 
