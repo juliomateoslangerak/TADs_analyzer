@@ -27,7 +27,7 @@ def rescale_SIM(image, bins=256, out_range=None):
     Returns
     -------
     np.ndarray
-        Rescaled image as int16
+        Rescaled image
     """
     image_dtype_max = (
         np.finfo(image.dtype).max
