@@ -101,8 +101,8 @@ def process_channel(
     )
     domain_props_df = pd.DataFrame(domain_props_dict)
     pore_props_3d = regionprops_3D(domain_labels)
-    domain_props_df["sphericity"] = 0
-    domain_props_df["solidity"] = 0
+    domain_props_df["sphericity"] = 0.0
+    domain_props_df["solidity"] = 0.0
     for lab in pore_props_3d:
         domain_props_df.loc[
             domain_props_df.label == lab.label, "sphericity"
