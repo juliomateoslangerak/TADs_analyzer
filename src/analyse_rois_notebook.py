@@ -1,5 +1,4 @@
 import marimo
-import omero_rois
 
 __generated_with = "0.18.4"
 app = marimo.App(width="medium")
@@ -10,8 +9,8 @@ def _():
     import marimo as mo
     import numpy as np
     import omero_toolbox as omero_tb
+    import omero_rois
     import analysis_functions
-    from time import sleep
     from omero.model import PointI
 
     # Default parameters
@@ -36,8 +35,15 @@ def _():
         "sigma": 0.5,
         "pixel_size": (0.125, 0.04, 0.04),  # as ZYX
     }
-
-    return analysis_functions, mo, np, omero_tb, sleep, PointI, default_analysis_parameters
+    return (
+        mo,
+        np,
+        omero_tb,
+        omero_rois,
+        analysis_functions,
+        PointI,
+        default_analysis_parameters,
+    )
 
 
 @app.cell
