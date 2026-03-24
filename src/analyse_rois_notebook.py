@@ -47,7 +47,7 @@ def _():
 
 
 @app.cell
-def _(mo, default_analysis_parameters):
+def _(default_analysis_parameters, mo):
     analysis_form = mo.md(
         """Fill the analysis parameters:
 
@@ -148,14 +148,7 @@ def _(mo, default_analysis_parameters):
 
 
 @app.cell
-def _(
-    mo,
-    analysis_functions,
-    np,
-    omero_tb,
-    PointI,
-    analysis_form,
-):
+def _(PointI, analysis_form, analysis_functions, mo, np, omero_rois, omero_tb):
     if analysis_form.value is None:
         mo.md("### Waiting for input.")
 
@@ -238,6 +231,8 @@ def _(
                                 z_range=z_range
                             )
                             roi_intensities = analysis_functions.rescale_SIM(roi_intensities, out_range="uint16")
+                            # Transpose from zctyx to czyx using t=0
+                            roi_intensities = np.transpose(roi_intensities[:, :, 0, :, :], (1, 0, 2, 3))
 
                             voxel_size = omero_tb.get_pixel_size(image, order="ZYX")
 
