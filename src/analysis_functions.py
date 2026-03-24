@@ -45,7 +45,7 @@ def rescale_SIM(image, bins=256, out_range=None):
         out_range = (image_mode, image_dtype_max)
 
     return rescale_intensity(
-        image=image, in_range=(image_mode, image_dtype_max), out_range=out_range
+        image=image, in_range=(image_mode, image.max()), out_range=out_range
     )
 
 
