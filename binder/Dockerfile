@@ -17,14 +17,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir poetry==2.2.1
 
+# Copy poetry files and README (as root to ensure proper permissions)
+COPY --chown=${NB_USER}:${NB_USER} pyproject.toml poetry.lock README.md ${HOME}/
+
 # Switch to jovyan user
 USER ${NB_USER}
 
 # Set working directory
 WORKDIR ${HOME}
-
-# Copy poetry files and README (required by Poetry for package installation)
-COPY pyproject.toml poetry.lock README.md ./
 
 # Configure Poetry to not create virtual environments (not needed in container)
 RUN poetry config virtualenvs.create false
@@ -32,8 +32,14 @@ RUN poetry config virtualenvs.create false
 # Install dependencies using Poetry (--no-root to skip installing the project itself)
 RUN poetry install --only main --no-root --no-interaction --no-ansi
 
+# Switch back to root to copy files
+USER root
+
 # Copy project files
-COPY src/ ./src/
+COPY --chown=${NB_USER}:${NB_USER} src/ ${HOME}/src/
+
+# Switch back to jovyan for runtime
+USER ${NB_USER}
 
 # Expose port 8888 (mybinder.org standard)
 EXPOSE 8888
