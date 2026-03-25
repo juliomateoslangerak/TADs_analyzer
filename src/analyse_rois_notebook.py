@@ -28,8 +28,8 @@ def _():
             "min_intensity",
             # "coords",
             ),
-        "roi_size_xy": 100,
-        "roi_size_z": 50,
+        "roi_size_xy": 50,
+        "roi_size_z": 20,
         "domain_min_volume_px": 200,  # Minimum volume for the regions
         "subdomain_min_volume_px": 36,  # Minimum volume for the regions
         "sigma": 0.5,
