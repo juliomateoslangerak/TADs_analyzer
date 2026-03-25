@@ -17,81 +17,81 @@ def _():
 
 @app.cell
 def _(mo):
-    analysis_form = mo.md(
-        """Fill the analysis parameters:
+    analysis_form = (
+        mo.md(
+            """Fill the analysis parameters:
         
         {connection_parameters}
         {data_parameters}
         {analysis_parameters}
         """
-    ).batch(
-        connection_parameters=mo.ui.dictionary(
-            label="Connection parameters",
-            elements={
-                "omero_username": mo.ui.text(label="OMERO username"),
-                "omero_password": mo.ui.text(
-                    label="OMERO password",
-                    kind="password",
-                ),
-                "omero_host": mo.ui.text(
-                    value="omero.mri.cnrs.fr",
-                    label="OMERO server URL",
-                ),
-                "omero_port": mo.ui.number(
-                    value=4064,
-                    start=1,
-                    step=1,
-                    label="OMERO port",
-                ),
-                "omero_group": mo.ui.text(
-                    value="CND project", label="Group"
-                ),
-                "connection_secured": mo.ui.checkbox(
-                    value=True,
-                    label="Secured connection",
-                ),
-            }
-        ),
-        data_parameters=mo.ui.dictionary(
-            label="Data parameters",
-            elements={
-                "dataset_id": mo.ui.number(
-                    start=1, step=1, label="Dataset ID"
-                ),
-            }
-        ),
-        analysis_parameters=mo.ui.dictionary(
-            label="Analysis parameters",
-            elements={
-                "min_sigma": mo.ui.number(
-                    value=10.0,
-                    label="Min sigma",
-                    start=1.0,
-                    stop=100.0,
-                ),
-                "max_sigma": mo.ui.number(
-                    value=80.0,
-                    label="Max sigma",
-                    start=2.0,
-                    stop=200.0,
-                ),
-                "channel": mo.ui.number(
-                    value=0,
-                    label="Channel to analyze",
-                    start=0,
-                    stop=100,
-                    step=1,
-                ),
-                "border_to_exclude": mo.ui.number(
-                    value=0,
-                    label="Border exclusion size",
-                    start=0,
-                    stop=200,
-                    step=1,
-                ),
-            }
-        ),
-    ).form()
+        )
+        .batch(
+            connection_parameters=mo.ui.dictionary(
+                label="Connection parameters",
+                elements={
+                    "omero_username": mo.ui.text(label="OMERO username"),
+                    "omero_password": mo.ui.text(
+                        label="OMERO password",
+                        kind="password",
+                    ),
+                    "omero_host": mo.ui.text(
+                        value="omero.mri.cnrs.fr",
+                        label="OMERO server URL",
+                    ),
+                    "omero_port": mo.ui.number(
+                        value=4064,
+                        start=1,
+                        step=1,
+                        label="OMERO port",
+                    ),
+                    "omero_group": mo.ui.text(value="CND project", label="Group"),
+                    "connection_secured": mo.ui.checkbox(
+                        value=True,
+                        label="Secured connection",
+                    ),
+                },
+            ),
+            data_parameters=mo.ui.dictionary(
+                label="Data parameters",
+                elements={
+                    "dataset_id": mo.ui.number(start=1, step=1, label="Dataset ID"),
+                },
+            ),
+            analysis_parameters=mo.ui.dictionary(
+                label="Analysis parameters",
+                elements={
+                    "min_sigma": mo.ui.number(
+                        value=10.0,
+                        label="Min sigma",
+                        start=1.0,
+                        stop=100.0,
+                    ),
+                    "max_sigma": mo.ui.number(
+                        value=80.0,
+                        label="Max sigma",
+                        start=2.0,
+                        stop=200.0,
+                    ),
+                    "channel": mo.ui.number(
+                        value=0,
+                        label="Channel to analyze",
+                        start=0,
+                        stop=100,
+                        step=1,
+                    ),
+                    "border_to_exclude": mo.ui.number(
+                        value=0,
+                        label="Border exclusion size",
+                        start=0,
+                        stop=200,
+                        step=1,
+                    ),
+                },
+            ),
+        )
+        .form()
+    )
 
     analysis_form
 
@@ -165,7 +165,9 @@ def _(
                         )
 
                     omero_tb.create_roi(conn, image, points_with_zc)
-                    _spinner.update(f"Found {len(points_with_zc)} spots. Creating preview image")
+                    _spinner.update(
+                        f"Found {len(points_with_zc)} spots. Creating preview image"
+                    )
                     image_data_mip = np.max(image_data, 0)
                     image_mip = omero_tb.create_image_from_numpy_array(
                         connection=conn,

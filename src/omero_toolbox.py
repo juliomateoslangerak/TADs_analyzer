@@ -1201,7 +1201,15 @@ def create_shape_mask(
 
 
 def create_shapes_mask_from_labels_image_3d(
-    labels_3d, c_pos=None, t_pos=None, x_pos=0, y_pos=0, z_pos=0, mask_name=None, fill_color=(0, 255, 0, 120), raise_on_no_mask=True
+    labels_3d,
+    c_pos=None,
+    t_pos=None,
+    x_pos=0,
+    y_pos=0,
+    z_pos=0,
+    mask_name=None,
+    fill_color=(0, 255, 0, 120),
+    raise_on_no_mask=True,
 ):
     """
     Create a mask shape from a binary image (background=0)

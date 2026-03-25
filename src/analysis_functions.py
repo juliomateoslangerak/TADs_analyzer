@@ -104,12 +104,12 @@ def process_channel(
     domain_props_df["sphericity"] = 0.0
     domain_props_df["solidity"] = 0.0
     for lab in pore_props_3d:
-        domain_props_df.loc[
-            domain_props_df.label == lab.label, "sphericity"
-        ] = lab.sphericity
-        domain_props_df.loc[
-            domain_props_df.label == lab.label, "solidity"
-        ] = lab.solidity
+        domain_props_df.loc[domain_props_df.label == lab.label, "sphericity"] = (
+            lab.sphericity
+        )
+        domain_props_df.loc[domain_props_df.label == lab.label, "solidity"] = (
+            lab.solidity
+        )
     domain_props_df.insert(loc=0, column="roi_type", value="domain")
 
     # Detecting Subdomains
