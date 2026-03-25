@@ -1,0 +1,29 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+__marimo__
+src/__marimo__
+src/__pycache__
+
+# Virtual environments
+.venv
+venv/
+ENV/
+
+# IDE
+.idea
+.vscode
+
+# Poetry
+poetry.toml
+
+# Other
+reproduce_issue.py
+.pre-commit-config.yaml
