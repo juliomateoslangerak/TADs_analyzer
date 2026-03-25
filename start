@@ -1,0 +1,13 @@
+#!/bin/bash
+# Binder startup script
+# This file is used by mybinder.org to start the application
+
+# Install dependencies if not already installed
+if ! command -v poetry &> /dev/null; then
+    pip install poetry==2.2.1
+fi
+
+poetry config virtualenvs.create false
+poetry install --only main --no-interaction --no-ansi
+
+exec marimo edit --host 0.0.0.0 --port 8080 --no-token src/find_rois_notebook.py
