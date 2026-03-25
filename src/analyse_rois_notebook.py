@@ -7,10 +7,11 @@ app = marimo.App(width="medium")
 def _():
     import marimo as mo
     import numpy as np
-    import omero_toolbox as omero_tb
     import omero_rois
-    import analysis_functions
     from omero.model import PointI
+
+    import analysis_functions
+    import omero_toolbox as omero_tb
 
     # Default parameters
     default_analysis_parameters = {
@@ -27,12 +28,12 @@ def _():
             "min_intensity",
             # "coords",
         ),
-        "roi_size_xy": 50,
+        "roi_size_xy": 56,
         "roi_size_z": 20,
-        "domain_min_volume_px": 200,  # Minimum volume for the regions
-        "subdomain_min_volume_px": 36,  # Minimum volume for the regions
+        "domain_min_volume_px": 210,  # Minimum volume for the regions
+        "subdomain_min_volume_px": 38,  # Minimum volume for the regions
         "sigma": 0.5,
-        "pixel_size": (0.125, 0.04, 0.04),  # as ZYX
+        "pixel_size": (0.125, 0.039, 0.039),  # as ZYX
     }
     return (
         mo,
@@ -268,10 +269,14 @@ def _(PointI, analysis_form, analysis_functions, mo, np, omero_rois, omero_tb):
                                 analysis_functions.process_image(
                                     image=roi_intensities,
                                     domain_properties=analysis_params["properties"],
-                                    subdomain_properties=analysis_params["properties"],
+                                    subdomain_properties=analysis_params[
+                                        "properties"
+                                    ],
                                     voxel_size=voxel_size,
                                     sigma=analysis_params["sigma"],
-                                    min_volume=analysis_params["domain_min_volume_px"],
+                                    min_volume=analysis_params[
+                                        "domain_min_volume_px"
+                                    ],
                                     subdomain_min_volume=analysis_params[
                                         "subdomain_min_volume_px"
                                     ],
@@ -293,15 +298,21 @@ def _(PointI, analysis_form, analysis_functions, mo, np, omero_rois, omero_tb):
                             )
 
                             # Correct the centroids position in the dataframe:
-                            rois_df["centroid-0"] = rois_df["centroid-0"] + z_range[0]
+                            rois_df["centroid-0"] = (
+                                rois_df["centroid-0"] + z_range[0]
+                            )
                             rois_df["weighted_centroid-0"] = (
                                 rois_df["weighted_centroid-0"] + z_range[0]
                             )
-                            rois_df["centroid-1"] = rois_df["centroid-1"] + y_range[0]
+                            rois_df["centroid-1"] = (
+                                rois_df["centroid-1"] + y_range[0]
+                            )
                             rois_df["weighted_centroid-1"] = (
                                 rois_df["weighted_centroid-1"] + y_range[0]
                             )
-                            rois_df["centroid-2"] = rois_df["centroid-2"] + x_range[0]
+                            rois_df["centroid-2"] = (
+                                rois_df["centroid-2"] + x_range[0]
+                            )
                             rois_df["weighted_centroid-2"] = (
                                 rois_df["weighted_centroid-2"] + x_range[0]
                             )
