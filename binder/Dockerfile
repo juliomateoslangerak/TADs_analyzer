@@ -17,23 +17,16 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir poetry==2.2.1
 
-# Copy poetry files and README (as root to ensure proper permissions)
-COPY --chown=${NB_USER}:${NB_USER} pyproject.toml poetry.lock README.md ${HOME}/
+# Copy poetry files and README
+COPY pyproject.toml poetry.lock README.md ${HOME}/
 
-# Switch to jovyan user
-USER ${NB_USER}
-
-# Set working directory
+# Install dependencies using Poetry as root (to access system site-packages)
 WORKDIR ${HOME}
+RUN poetry config virtualenvs.create false && \
+    poetry install --only main --no-root --no-interaction --no-ansi
 
-# Configure Poetry to not create virtual environments (not needed in container)
-RUN poetry config virtualenvs.create false
-
-# Install dependencies using Poetry (--no-root to skip installing the project itself)
-RUN poetry install --only main --no-root --no-interaction --no-ansi
-
-# Switch back to root to copy files
-USER root
+# Fix ownership of installed files
+RUN chown -R ${NB_USER}:${NB_USER} ${HOME}
 
 # Copy project files
 COPY --chown=${NB_USER}:${NB_USER} src/ ${HOME}/src/
