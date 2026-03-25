@@ -1,16 +1,23 @@
 # Dockerfile for TADs Analyzer
 # Compatible with mybinder.org
-# Using Jupyter base image for faster builds
 
-FROM quay.io/jupyter/base-notebook:ubuntu-22.04
+FROM python:3.12-slim
 
-# Switch to root for installing packages
-USER root
+# Create jovyan user (mybinder.org standard)
+ARG NB_USER=jovyan
+ARG NB_UID=1000
+ENV USER=${NB_USER}
+ENV HOME=/home/${NB_USER}
 
-# Install Poetry
-RUN pip install --no-cache-dir poetry==2.2.1
+RUN adduser --disabled-password --gecos "Default user" --uid ${NB_UID} ${NB_USER}
 
-# Switch back to jovyan user
+# Install system dependencies and Poetry
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir poetry==2.2.1
+
+# Switch to jovyan user
 USER ${NB_USER}
 
 # Set working directory
