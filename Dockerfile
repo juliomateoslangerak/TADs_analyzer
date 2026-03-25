@@ -1,16 +1,20 @@
 # Dockerfile for TADs Analyzer
 # Compatible with mybinder.org
+# Using mybinder's base image for faster builds
 
-FROM python:3.12-slim
+FROM quay.io/jupyterhub/repo2docker-buildpack:2025.12.0
+
+# Switch to root for installing packages
+USER root
+
+# Install Poetry
+RUN pip install --no-cache-dir poetry==2.2.1
+
+# Switch back to jovyan user
+USER ${NB_USER}
 
 # Set working directory
-WORKDIR /home/jovyan
-
-# Install system dependencies and Poetry
-RUN apt-get update && apt-get install -y \
-    git \
-    && rm -rf /var/lib/apt/lists/* \
-    && pip install --no-cache-dir poetry==2.2.1
+WORKDIR ${HOME}
 
 # Copy poetry files and README (required by Poetry for package installation)
 COPY pyproject.toml poetry.lock README.md ./
