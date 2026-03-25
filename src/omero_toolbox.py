@@ -1200,26 +1200,29 @@ def create_shape_mask(
     return mask
 
 
-def masks_from_labels_image_3d(
-    labels_3d, rgba=None, c=None, t=None, text=None, raise_on_no_mask=True
+def create_shapes_mask_from_labels_image_3d(
+    labels_3d, c_pos=None, t_pos=None, x_pos=0, y_pos=0, z_pos=0, mask_name=None, fill_color=(0, 255, 0, 120), raise_on_no_mask=True
 ):
     """
     Create a mask shape from a binary image (background=0)
 
-    :param numpy.array labels_3d: labels 3D array
-    :param rgba int-4-tuple: Optional (red, green, blue, alpha) colour
-    :param c: Optional C-index for the mask
-    :param t: Optional T-index for the mask
-    :param text: Optional text for the mask
+    :param numpy.array labels_3d: labels 3D array in order ZXY
+    :param fill_color int-4-tuple: Optional (red, green, blue, alpha) colour
+    :param z_pos:
+    :param y_pos:
+    :param x_pos:
+    :param c_pos: Optional C-index for the mask
+    :param t_pos: Optional T-index for the mask
+    :param mask_name: Optional text for the mask
     :param raise_on_no_mask: If True (default) throw an exception if no mask
            found, otherwise return an empty Mask
-    :return: An OMERO mask
+    :return: A dictionary of lists of mask shapes where the keys are the label values
     :raises NoMaskFound: If no labels were found
     :raises InvalidBinaryImage: If the maximum labels is greater than 1
     """
-    rois = {}
+    label_shape_masks = {}
     for i in range(1, labels_3d.max() + 1):
-        if not np.any(labels_3d == i):
+        if not np.any(labels_3d == i):  # Some labels might have been deleted previously
             continue
 
         masks = []
@@ -1244,42 +1247,32 @@ def masks_from_labels_image_3d(
 
         for z, plane in enumerate(submask):
             if np.any(plane):
-                mask = MaskI()
+                mask = model.MaskI()
                 # BUG in older versions of Numpy:
                 # https://github.com/numpy/numpy/issues/5377
                 # Need to convert to an int array
                 # mask.setBytes(np.packbits(submask))
                 mask.setBytes(np.packbits(np.asarray(plane, dtype=int)))
-                mask.setWidth(rdouble(w))
-                mask.setHeight(rdouble(h))
-                mask.setX(rdouble(x0))
-                mask.setY(rdouble(y0))
-                mask.setTheZ(rint(z))
+                mask.setWidth(rtypes.rdouble(w))
+                mask.setHeight(rtypes.rdouble(h))
+                mask.setX(rtypes.rdouble(x0 + x_pos))
+                mask.setY(rtypes.rdouble(y0 + y_pos))
+                mask.setTheZ(rtypes.rint(z + z_pos))
 
-                if rgba is not None:
-                    ch = ColorHolder.fromRGBA(*rgba)
-                    mask.setFillColor(rint(ch.getInt()))
-                if c is not None:
-                    mask.setTheC(rint(c))
-                if t is not None:
-                    mask.setTheT(rint(t))
-                if text is not None:
-                    mask.setTextValue(rstring(text))
+                if fill_color is not None:
+                    mask.setFillColor(rtypes.rint(_rgba_to_int(*fill_color)))
+                if c_pos is not None:
+                    mask.setTheC(rtypes.rint(c_pos))
+                if t_pos is not None:
+                    mask.setTheT(rtypes.rint(t_pos))
+                if mask_name is not None:
+                    mask.setTextValue(rtypes.rstring(mask_name))
 
                 masks.append(mask)
 
-        rois[i] = masks
+        label_shape_masks[i] = masks
 
-    return rois
-
-def rois_from_labels_3d(img, labels_3d, rgba, c=None, t=None, text=None):
-    rois = masks_from_labels_image_3d(
-        labels_3d, rgba=rgba, c=c, t=t, raise_on_no_mask=False
-    )
-
-    for label, masks in rois.items():
-        if len(masks) > 0:
-            create_roi(img=img, shapes=masks, name=f"{text}_{label}")
+    return label_shape_masks
 
 
 def link_annotation(object_wrapper, annotation_wrapper):

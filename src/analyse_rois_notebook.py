@@ -252,36 +252,48 @@ def _(PointI, analysis_form, analysis_functions, mo, np, omero_rois, omero_tb):
                             rois_df.insert(loc=0, column="image_id", value=image.getId())
                             rois_df.insert(loc=0, column="dataset_id", value=data_params["dataset_id"])
 
-                            domain_masks = omero_rois.masks_from_label_image(
-                                labelim=domain_labels,
-                                rgba=(0, 255, 0, 100),
-                                c=data_params["channel"],
-                                text=f"Domain: {shape_comment}",
-                                raise_on_no_mask=False
+                            # Correct the centroids position in the dataframe:
+                            rois_df["centroid-0"] = rois_df["centroid-0"] + z_range[0]
+                            rois_df["weighted_centroid-0"] = rois_df["weighted_centroid-0"] + z_range[0]
+                            rois_df["centroid-1"] = rois_df["centroid-1"] + y_range[0]
+                            rois_df["weighted_centroid-1"] = rois_df["weighted_centroid-1"] + y_range[0]
+                            rois_df["centroid-2"] = rois_df["centroid-2"] + x_range[0]
+                            rois_df["weighted_centroid-2"] = rois_df["weighted_centroid-2"] + x_range[0]
+
+                            domain_masks = omero_tb.create_shapes_mask_from_labels_image_3d(
+                                labels_3d=domain_labels[0],  # TODO: implement channel handling
+                                c_pos=data_params["channel"],
+                                x_pos=x_range[0],
+                                y_pos=y_range[0],
+                                z_pos=z_range[0],
+                                fill_color=(0, 255, 0, 100),
                             )
 
-                            omero_tb.create_roi(
-                                connection=conn,
-                                image=image,
-                                shapes=domain_masks,
-                                name=shape_comment,
-                                description=f"source roi_id: {roi.getId()}",
-                            )
+                            for label, masks in domain_masks.items():
+                                omero_tb.create_roi(
+                                    connection=conn,
+                                    image=image,
+                                    shapes=masks,
+                                    name=f"{shape_comment}_domain:{label}",
+                                    description=f"source roi_id: {roi.getId()}",
+                                )
 
-                            subdomain_masks = omero_rois.masks_from_label_image(
-                                labelim=subdomain_labels,
-                                rgba=(255, 0, 0, 100),
-                                c=data_params["channel"],
-                                text=f"Subdomain: {shape_comment}",
+                            subdomain_masks = omero_tb.create_shapes_mask_from_labels_image_3d(
+                                labels_3d=subdomain_labels[0],
+                                c_pos=data_params["channel"],
+                                x_pos=x_range[0],
+                                y_pos=y_range[0],
+                                z_pos=z_range[0],
+                                fill_color=(255, 0, 0, 100),
                             )
-
-                            omero_tb.create_roi(
-                                connection=conn,
-                                image=image,
-                                shapes=subdomain_masks,
-                                name=shape_comment,
-                                description=f"source roi_id: {roi.getId()}",
-                            )
+                            for label, masks in subdomain_masks.items():
+                                omero_tb.create_roi(
+                                    connection=conn,
+                                    image=image,
+                                    shapes=masks,
+                                    name=f"{shape_comment}_subdomain:{label}",
+                                    description=f"source roi_id: {roi.getId()}",
+                                )
 
             except Exception as e:
                 print(f"Error processing image {image.getId()}: {e}")
