@@ -2,6 +2,9 @@
 
 A set of notebooks to analyze images of TADs (Topologically Associating Domains) stored in an OMERO server.
 
+You may run this marimo notebook here:
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/juliomateoslangerak/TADs_analyzer/HEAD)
+
 ## Overview
 
 TADs Analyzer is a Python-based toolkit designed for microscopy image analysis, specifically focused on chromatin structure and topologically associating domains. It provides interactive notebooks and utility functions to process and analyze images stored in OMERO (Open Microscopy Environment) servers.
