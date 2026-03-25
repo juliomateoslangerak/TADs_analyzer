@@ -12,8 +12,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir poetry==2.2.1
 
-# Copy poetry files
-COPY pyproject.toml poetry.lock ./
+# Copy poetry files and README (required by Poetry for package installation)
+COPY pyproject.toml poetry.lock README.md ./
 
 # Configure Poetry to not create virtual environments (not needed in container)
 RUN poetry config virtualenvs.create false
@@ -23,7 +23,6 @@ RUN poetry install --only main --no-interaction --no-ansi
 
 # Copy project files
 COPY src/ ./src/
-COPY README.md .
 
 # Expose marimo default port
 EXPOSE 8080
