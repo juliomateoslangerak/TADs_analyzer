@@ -18,8 +18,8 @@ COPY pyproject.toml poetry.lock README.md ./
 # Configure Poetry to not create virtual environments (not needed in container)
 RUN poetry config virtualenvs.create false
 
-# Install dependencies using Poetry
-RUN poetry install --only main --no-interaction --no-ansi
+# Install dependencies using Poetry (--no-root to skip installing the project itself)
+RUN poetry install --only main --no-root --no-interaction --no-ansi
 
 # Copy project files
 COPY src/ ./src/
