@@ -230,7 +230,9 @@ def _(PointI, analysis_form, analysis_functions, mo, np, omero_rois, omero_tb):
                                 y_range=y_range,
                                 z_range=z_range
                             )
+
                             roi_intensities = analysis_functions.rescale_SIM(roi_intensities, out_range="uint16")
+
                             # Transpose from zctyx to czyx using t=0
                             roi_intensities = np.transpose(roi_intensities[:, :, 0, :, :], (1, 0, 2, 3))
 
