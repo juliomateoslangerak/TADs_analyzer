@@ -1,8 +1,8 @@
 # Dockerfile for TADs Analyzer
 # Compatible with mybinder.org
-# Using mybinder's base image for faster builds
+# Using Jupyter base image for faster builds
 
-FROM quay.io/jupyterhub/repo2docker-buildpack:2025.12.0
+FROM quay.io/jupyter/base-notebook:ubuntu-22.04
 
 # Switch to root for installing packages
 USER root
