@@ -28,12 +28,12 @@ RUN poetry install --only main --no-root --no-interaction --no-ansi
 # Copy project files
 COPY src/ ./src/
 
-# Expose marimo default port
-EXPOSE 8080
+# Expose port 8888 (mybinder.org standard)
+EXPOSE 8888
 
 # Set environment variables for marimo
 ENV MARIMO_HOST=0.0.0.0
-ENV MARIMO_PORT=8080
+ENV MARIMO_PORT=8888
 
 # Default command: run find_rois_notebook.py with marimo
-CMD ["marimo", "edit", "--host", "0.0.0.0", "--port", "8080", "--no-token", "src/find_rois_notebook.py"]
+CMD ["marimo", "edit", "--host", "0.0.0.0", "--port", "8888", "--no-token", "src/find_rois_notebook.py"]
