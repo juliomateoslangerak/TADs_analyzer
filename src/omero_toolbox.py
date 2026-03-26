@@ -1,27 +1,25 @@
 # OMERO imports
-import omero.gateway as gw
-import omero
-from omero.constants import metadata, namespaces
-from omero import model
-from omero.model import enums, LengthI
-from omero import grid
-from omero import rtypes
-import omero_rois
+import math
+import struct
+from functools import reduce
+from itertools import product
+from json import dumps
+from operator import mul
+from random import choice
+from string import ascii_letters
 
 # Generic imports
 import numpy as np
-from operator import mul
-from itertools import product
-from functools import reduce
-from json import dumps
-from random import choice
-from string import ascii_letters
-import math
-import struct
+import omero
+import omero.gateway as gw
+import omero_rois
+import pandas as pd
+from omero import grid, model, rtypes
+from omero.constants import metadata, namespaces
+from omero.model import LengthI, enums
 
 # Image processing imports
 from skimage import draw
-
 
 DTYPES_NP_TO_OMERO = {
     "int8": enums.PixelsTypeint8,
@@ -192,7 +190,9 @@ def get_intensities(
                 else:
                     raise IndexError("Range values must contain 1 to three values")
             if not 1 <= ranges[dim].stop <= image_shape[dim]:
-                raise IndexError("Specified range is outside of the image dimensions")
+                raise IndexError(
+                    "Specified range is outside of the image dimensions"
+                )
 
     return _get_planes(image, ranges)
 
@@ -214,7 +214,12 @@ def _get_planes(image, ranges):
             ] = tile
 
     def _get_whole_tiles():
-        tile_region = (ranges[4].start, ranges[3].start, len(ranges[4]), len(ranges[3]))
+        tile_region = (
+            ranges[4].start,
+            ranges[3].start,
+            len(ranges[4]),
+            len(ranges[3]),
+        )
         zct_tile_list = [(z, c, t, tile_region) for z, c, t in zct_list]
         np.stack(list(pixels.getTiles(zctTileList=zct_tile_list)), out=intensities)
 
@@ -254,7 +259,10 @@ def _get_planes(image, ranges):
     if (
         output_shape[4] < max_plane_size[0] and output_shape[3] < max_plane_size[1]
     ):  # fits in message size
-        if image.getSizeX() == output_shape[4] and image.getSizeY() == output_shape[3]:
+        if (
+            image.getSizeX() == output_shape[4]
+            and image.getSizeY() == output_shape[3]
+        ):
             _get_whole_planes()
         else:
             _get_whole_tiles()
@@ -262,7 +270,10 @@ def _get_planes(image, ranges):
 
     else:  # Must tile images or tiles
         intensities = np.reshape(intensities, shape=output_shape)
-        if image.getSizeX() == output_shape[4] and image.getSizeY() == output_shape[3]:
+        if (
+            image.getSizeX() == output_shape[4]
+            and image.getSizeY() == output_shape[3]
+        ):
             _get_tiled_planes()
         else:
             _get_tiled_tiles()
@@ -308,7 +319,9 @@ def _get_rectangle_intensities(image, shape):
 def _get_polygon_intensities(image, shape, zero_edge, zero_value):
     # We max cause marking ROIs in GUI may render some coordinates negative
     shape_points = shape.getPoints()._val
-    shape_points = [tuple(float(c) for c in p.split(",")) for p in shape_points.split()]
+    shape_points = [
+        tuple(float(c) for c in p.split(",")) for p in shape_points.split()
+    ]
 
     image_x_coords = [int(x) for x, y in shape_points]
     image_y_coords = [int(y) for x, y in shape_points]
@@ -653,7 +666,13 @@ def create_dataset(connection, name, description=None, parent_project=None):
 
 
 def _delete_object(
-    conn, object_type, objects, delete_annotations, delete_children, wait, callback=None
+    conn,
+    object_type,
+    objects,
+    delete_annotations,
+    delete_children,
+    wait,
+    callback=None,
 ):
     if not isinstance(objects, list) and not isinstance(object, int):
         obj_ids = [objects.getId()]
@@ -871,7 +890,9 @@ def _create_table(column_names, columns_descriptions, values, types=None):
         if types is not None:
             v_type = types[i]
         else:
-            v_type = [type(v[0][0])] if isinstance(v[0], (list, tuple)) else type(v[0])
+            v_type = (
+                [type(v[0][0])] if isinstance(v[0], (list, tuple)) else type(v[0])
+            )
         # Verify that all elements in values are the same type
         # if not all(isinstance(x, v_type) for x in v):
         #     raise TypeError(f'Not all elements in column {cn} are of the same type')
@@ -914,10 +935,18 @@ def _create_table(column_names, columns_descriptions, values, types=None):
             args = {"name": cn, "description": cd, "values": v}
             columns.append(_create_column(data_type="string", kwargs=args))
         elif v_type in [gw.ImageWrapper, model.ImageI]:
-            args = {"name": cn, "description": cd, "values": [img.getId() for img in v]}
+            args = {
+                "name": cn,
+                "description": cd,
+                "values": [img.getId() for img in v],
+            }
             columns.append(_create_column(data_type="image", kwargs=args))
         elif v_type in [gw.RoiWrapper, model.RoiI]:
-            args = {"name": cn, "description": cd, "values": [roi.getId() for roi in v]}
+            args = {
+                "name": cn,
+                "description": cd,
+                "values": [roi.getId() for roi in v],
+            }
             columns.append(_create_column(data_type="roi", kwargs=args))
         elif isinstance(v_type, (list, tuple)):  # We are creating array columns
             # Verify that every element in the 'array' is the same length and type
@@ -949,8 +978,8 @@ def create_annotation_table(
     connection,
     table_name,
     column_names,
-    column_descriptions,
     values,
+    column_descriptions=None,
     types=None,
     namespace=None,
     table_description=None,
@@ -964,6 +993,9 @@ def create_annotation_table(
     table_name = (
         f'{table_name}_{"".join([choice(ascii_letters) for _ in range(32)])}.h5'
     )
+
+    if column_descriptions is None:
+        column_descriptions = [""] * len(column_names)
 
     columns = _create_table(
         column_names=column_names,
@@ -989,8 +1021,32 @@ def create_annotation_table(
     return file_ann
 
 
+def create_annotation_table_from_df(
+    connection,
+    dataframe: pd.DataFrame,
+    table_name,
+    namespace=None,
+    table_description=None,
+    column_descriptions=None,
+):
+    """Creates a table annotation from a pandas dataframe"""
+    column_names = dataframe.columns.tolist()
+
+    values = [dataframe[col].tolist() for col in dataframe.columns]
+
+    return create_annotation_table(
+        connection=connection,
+        table_name=table_name,
+        column_names=column_names,
+        column_descriptions=column_descriptions,
+        values=values,
+        namespace=namespace,
+        table_description=table_description,
+    )
+
+
 def create_roi(connection, image, shapes, name=None, description=None):
-    """A pass through to link a roi to an image"""
+    """A pass-through to link a roi to an image"""
     return _create_roi(connection, image, shapes, name, description)
 
 
@@ -1180,7 +1236,13 @@ def create_shape_polygon(
 
 
 def create_shape_mask(
-    mask_array, x_pos, y_pos, z_pos, t_pos, mask_name=None, fill_color=(0, 255, 0, 120)
+    mask_array,
+    x_pos,
+    y_pos,
+    z_pos,
+    t_pos,
+    mask_name=None,
+    fill_color=(0, 255, 0, 120),
 ):
     mask = model.MaskI()
     mask.setX(rtypes.rdouble(x_pos))
@@ -1230,7 +1292,9 @@ def create_shapes_mask_from_labels_image_3d(
     """
     label_shape_masks = {}
     for i in range(1, labels_3d.max() + 1):
-        if not np.any(labels_3d == i):  # Some labels might have been deleted previously
+        if not np.any(
+            labels_3d == i
+        ):  # Some labels might have been deleted previously
             continue
 
         masks = []

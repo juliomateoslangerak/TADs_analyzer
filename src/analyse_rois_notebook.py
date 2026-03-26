@@ -7,7 +7,7 @@ app = marimo.App(width="medium")
 def _():
     import marimo as mo
     import numpy as np
-    import omero_rois
+    import pandas as pd
     from omero.model import PointI
 
     import analysis_functions
@@ -38,8 +38,8 @@ def _():
     return (
         mo,
         np,
+        pd,
         omero_tb,
-        omero_rois,
         analysis_functions,
         PointI,
         default_analysis_parameters,
@@ -148,7 +148,7 @@ def _(default_analysis_parameters, mo):
 
 
 @app.cell
-def _(PointI, analysis_form, analysis_functions, mo, np, omero_rois, omero_tb):
+def _(PointI, analysis_form, analysis_functions, mo, np, pd, omero_tb):
     if analysis_form.value is None:
         mo.md("### Waiting for input.")
 
@@ -181,19 +181,23 @@ def _(PointI, analysis_form, analysis_functions, mo, np, omero_rois, omero_tb):
                 )
                 dataset_images = omero_tb.get_dataset_images(dataset=dataset)
 
+                dataset_df = pd.DataFrame()
+
                 for image in dataset_images:
                     image_name = image.getName()
                     if data_params["image_name_filter"] not in image_name:
                         continue
                     _spinner.update(f"Analyzing: {image_name}")
 
+                    image_df = pd.DataFrame()
+
                     result = roi_service.findByImage(image.getId(), None)
-                    for roi in result.rois:
-                        for shape in roi.iterateShapes():
-                            if not isinstance(shape, PointI):
+                    for source_roi in result.rois:
+                        for source_shape in source_roi.iterateShapes():
+                            if not isinstance(source_shape, PointI):
                                 continue
                             try:
-                                shape_comment = shape.getTextValue()._val
+                                shape_comment = source_shape.getTextValue()._val
                             except AttributeError:
                                 shape_comment = None
 
@@ -205,31 +209,31 @@ def _(PointI, analysis_form, analysis_functions, mo, np, omero_rois, omero_tb):
                             # Calculate ranges
                             x_range = (
                                 int(
-                                    shape.getX().getValue()
+                                    source_shape.getX().getValue()
                                     - analysis_params["roi_size_xy"] / 2
                                 ),
                                 int(
-                                    shape.getX().getValue()
+                                    source_shape.getX().getValue()
                                     + analysis_params["roi_size_xy"] / 2
                                 ),
                             )
                             y_range = (
                                 int(
-                                    shape.getY().getValue()
+                                    source_shape.getY().getValue()
                                     - analysis_params["roi_size_xy"] / 2
                                 ),
                                 int(
-                                    shape.getY().getValue()
+                                    source_shape.getY().getValue()
                                     + analysis_params["roi_size_xy"] / 2
                                 ),
                             )
                             z_range = (
                                 int(
-                                    shape.getTheZ().getValue()
+                                    source_shape.getTheZ().getValue()
                                     - analysis_params["roi_size_z"] / 2
                                 ),
                                 int(
-                                    shape.getTheZ().getValue()
+                                    source_shape.getTheZ().getValue()
                                     + analysis_params["roi_size_z"] / 2
                                 ),
                             )
@@ -265,7 +269,7 @@ def _(PointI, analysis_form, analysis_functions, mo, np, omero_rois, omero_tb):
 
                             voxel_size = omero_tb.get_pixel_size(image, order="ZYX")
 
-                            rois_df, domain_labels, subdomain_labels = (
+                            shape_df, domain_labels, subdomain_labels = (
                                 analysis_functions.process_image(
                                     image=roi_intensities,
                                     domain_properties=analysis_params["properties"],
@@ -284,37 +288,24 @@ def _(PointI, analysis_form, analysis_functions, mo, np, omero_rois, omero_tb):
                                 )
                             )
 
-                            rois_df.insert(
-                                loc=0, column="shape_id", value=shape.getId()
-                            )
-                            rois_df.insert(loc=0, column="roi_id", value=roi.getId())
-                            rois_df.insert(
-                                loc=0, column="image_id", value=image.getId()
-                            )
-                            rois_df.insert(
-                                loc=0,
-                                column="dataset_id",
-                                value=data_params["dataset_id"],
-                            )
-
                             # Correct the centroids position in the dataframe:
-                            rois_df["centroid-0"] = (
-                                rois_df["centroid-0"] + z_range[0]
+                            shape_df["centroid-0"] = (
+                                shape_df["centroid-0"] + z_range[0]
                             )
-                            rois_df["weighted_centroid-0"] = (
-                                rois_df["weighted_centroid-0"] + z_range[0]
+                            shape_df["weighted_centroid-0"] = (
+                                shape_df["weighted_centroid-0"] + z_range[0]
                             )
-                            rois_df["centroid-1"] = (
-                                rois_df["centroid-1"] + y_range[0]
+                            shape_df["centroid-1"] = (
+                                shape_df["centroid-1"] + y_range[0]
                             )
-                            rois_df["weighted_centroid-1"] = (
-                                rois_df["weighted_centroid-1"] + y_range[0]
+                            shape_df["weighted_centroid-1"] = (
+                                shape_df["weighted_centroid-1"] + y_range[0]
                             )
-                            rois_df["centroid-2"] = (
-                                rois_df["centroid-2"] + x_range[0]
+                            shape_df["centroid-2"] = (
+                                shape_df["centroid-2"] + x_range[0]
                             )
-                            rois_df["weighted_centroid-2"] = (
-                                rois_df["weighted_centroid-2"] + x_range[0]
+                            shape_df["weighted_centroid-2"] = (
+                                shape_df["weighted_centroid-2"] + x_range[0]
                             )
 
                             domain_masks = (
@@ -330,14 +321,16 @@ def _(PointI, analysis_form, analysis_functions, mo, np, omero_rois, omero_tb):
                                 )
                             )
 
-                            for label, masks in domain_masks.items():
-                                omero_tb.create_roi(
+                            try:
+                                domain_roi = omero_tb.create_roi(
                                     connection=conn,
                                     image=image,
-                                    shapes=masks,
-                                    name=f"{shape_comment}_domain:{label}",
-                                    description=f"source roi_id: {roi.getId()}",
+                                    shapes=domain_masks[1],
+                                    name=f"{shape_comment}_domain",
+                                    description=f"source roi_id: {source_roi.getId()}",
                                 )
+                            except KeyError:
+                                continue
 
                             subdomain_masks = (
                                 omero_tb.create_shapes_mask_from_labels_image_3d(
@@ -355,11 +348,52 @@ def _(PointI, analysis_form, analysis_functions, mo, np, omero_rois, omero_tb):
                                     image=image,
                                     shapes=masks,
                                     name=f"{shape_comment}_subdomain:{label}",
-                                    description=f"source roi_id: {roi.getId()}",
+                                    description=f"source roi_id: {source_roi.getId()}",
                                 )
+
+                            shape_df.insert(
+                                loc=0,
+                                column="source_shape_id",
+                                value=source_shape.getId().getValue(),
+                            )
+                            shape_df.insert(
+                                loc=0,
+                                column="source_roi_id",
+                                value=source_roi.getId().getValue(),
+                            )
+                            shape_df.insert(
+                                loc=0,
+                                column="roi_id",
+                                value=domain_roi.getId().getValue(),
+                            )
+
+                            image_df = pd.concat(
+                                [image_df, shape_df], ignore_index=True
+                            )
+
+                    image_df.insert(loc=0, column="image_id", value=image.getId())
+
+                    dataset_df = pd.concat([dataset_df, image_df], ignore_index=True)
+
+                dataset_df.insert(
+                    loc=0,
+                    column="dataset_id",
+                    value=dataset.getId(),
+                )
+
+                tads_omero_table = omero_tb.create_annotation_table_from_df(
+                    connection=conn,
+                    dataframe=dataset_df,
+                    table_name=f"dataset_{dataset.getId()}_tads",
+                    namespace="tads",
+                    table_description=f"Table of TADs for datasetid: {dataset.getId()}",
+                )
+
+                omero_tb.link_annotation(dataset, tads_omero_table)
 
             except Exception as e:
                 print(f"Error processing image {image.getId()}: {e}")
+                raise e
 
             finally:
                 conn.close()
