@@ -1,6 +1,7 @@
 import marimo
 
 __generated_with = "0.18.4"
+
 app = marimo.App(width="medium")
 
 
@@ -8,11 +9,11 @@ app = marimo.App(width="medium")
 def _():
     import marimo as mo
     import numpy as np
-    import omero_toolbox as omero_tb
-    import analysis_functions
-    from time import sleep
 
-    return analysis_functions, mo, np, omero_tb, sleep
+    import analysis_functions
+    import omero_toolbox as omero_tb
+
+    return analysis_functions, mo, np, omero_tb
 
 
 @app.cell
@@ -56,6 +57,10 @@ def _(mo):
                 label="Data parameters",
                 elements={
                     "dataset_id": mo.ui.number(start=1, step=1, label="Dataset ID"),
+                    "create_preview_mip": mo.ui.checkbox(
+                        value=False,
+                        label="Create preview MIP",
+                    ),
                 },
             ),
             analysis_parameters=mo.ui.dictionary(
@@ -81,7 +86,7 @@ def _(mo):
                         step=1,
                     ),
                     "border_to_exclude": mo.ui.number(
-                        value=0,
+                        value=30,
                         label="Border exclusion size",
                         start=0,
                         stop=200,
@@ -136,9 +141,9 @@ def _(
 
                 for image in dataset_images:
                     image_name = image.getName()
+                    _spinner.update(f"Analyzing: {image_name}")
                     if not image_name.endswith("SIR.dv"):
                         continue
-                    _spinner.update(f"Analyzing: {image_name}")
                     image_data = omero_tb.get_intensities(
                         image, c_range=analysis_params["channel"]
                     )
@@ -151,39 +156,46 @@ def _(
                     )
                     points_with_zc = []
                     points_preview = []
-                    for spot in spots:
+                    for i, spot in enumerate(spots):
                         points_with_zc.append(
                             omero_tb.create_shape_point(
                                 x_pos=spot[2],
                                 y_pos=spot[1],
                                 z_pos=spot[0],
                                 c_pos=analysis_params["channel"],
+                                name=str(i + 1),
                             )
                         )
                         points_preview.append(
-                            omero_tb.create_shape_point(x_pos=spot[2], y_pos=spot[1])
+                            omero_tb.create_shape_point(
+                                x_pos=spot[2], y_pos=spot[1], name=str(i + 1)
+                            )
                         )
 
                     omero_tb.create_roi(conn, image, points_with_zc)
-                    _spinner.update(
-                        f"Found {len(points_with_zc)} spots. Creating preview image"
-                    )
-                    image_data_mip = np.max(image_data, 0)
-                    image_mip = omero_tb.create_image_from_numpy_array(
-                        connection=conn,
-                        data=image_data_mip,
-                        image_name=f"{image_name[:-3]}_preview_mip",
-                        dataset=dataset,
-                        source_image_id=image.getId(),
-                        channels_list=[analysis_params["channel"]],
-                    )
-                    image_mip = omero_tb.get_image(conn, image_mip.getId())
-                    omero_tb.create_roi(conn, image_mip, points_preview)
+                    _spinner.update(f"Found {len(points_with_zc)} spots.")
+
+                    if data_params["create_preview_image"]:
+                        image_data_mip = np.max(image_data, 0)
+                        image_data_mip = np.expand_dims(
+                            image_data_mip, axis=(0, 1, 2)
+                        )
+                        image_mip = omero_tb.create_image_from_numpy_array(
+                            connection=conn,
+                            data=image_data_mip,
+                            image_name=f"{image_name[:-3]}_preview_mip",
+                            dataset=dataset,
+                            source_image_id=image.getId(),
+                            channels_list=[analysis_params["channel"]],
+                        )
+                        image_mip = omero_tb.get_image(conn, image_mip.getId())
+                        omero_tb.create_roi(conn, image_mip, points_preview)
 
                 _spinner.update("✅ **Analysis Complete!**")
 
             except Exception as e:
                 _spinner.update(f"❌ **Error**: {str(e)}")
+                raise e
 
             finally:
                 conn.close()
