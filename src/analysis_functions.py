@@ -1,14 +1,14 @@
-import numpy as np
-import pandas as pd
 from math import sqrt
 
-from skimage.feature import blob_dog
+import numpy as np
+import pandas as pd
+from porespy.metrics import regionprops_3D
 from skimage.exposure import rescale_intensity
+from skimage.feature import blob_dog
 from skimage.filters import gaussian, threshold_otsu
 from skimage.measure import label, regionprops_table
-from skimage.segmentation import clear_border, watershed, relabel_sequential
 from skimage.morphology import remove_small_objects
-from porespy.metrics import regionprops_3D
+from skimage.segmentation import clear_border, relabel_sequential, watershed
 
 
 def rescale_SIM(image, bins=1000, out_range=None):
@@ -29,6 +29,7 @@ def rescale_SIM(image, bins=1000, out_range=None):
     np.ndarray
         Rescaled image
     """
+    # FIXME: this function scales only one channel. We need to fix this
     image_dtype_max = (
         np.finfo(image.dtype).max
         if np.issubdtype(image.dtype, np.floating)
@@ -81,7 +82,9 @@ def process_channel(
     if sigma is None:
         filtered = channel
     else:
-        filtered = gaussian(channel, sigma=sigma, preserve_range=True).astype("uint16")
+        filtered = gaussian(channel, sigma=sigma, preserve_range=True).astype(
+            "uint16"
+        )
 
     # Detecting Domains
     thresholded = filtered > threshold_otsu(filtered)
