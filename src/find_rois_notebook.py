@@ -87,7 +87,7 @@ def _(mo):
                     ),
                     "border_to_exclude": mo.ui.number(
                         value=30,
-                        label="Border exclusion size",
+                        label="Border exclusion size (Not implemented)",
                         start=0,
                         stop=200,
                         step=1,
