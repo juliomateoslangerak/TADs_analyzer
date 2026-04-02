@@ -57,8 +57,20 @@ def _(mo):
                 label="Data parameters",
                 elements={
                     "dataset_id": mo.ui.number(start=1, step=1, label="Dataset ID"),
+                    "image_name_filter": mo.ui.text(
+                        value="SIR.dv",
+                        label="Image name filter",
+                    ),
+                    "delete_preexisting_rois": mo.ui.checkbox(
+                        value=True,
+                        label="Delete preexisting ROIs",
+                    ),
+                    "rescale_images": mo.ui.checkbox(
+                        value=True,
+                        label="Rescale source images",
+                    ),
                     "create_preview_mip": mo.ui.checkbox(
-                        value=False,
+                        value=True,
                         label="Create preview MIP",
                     ),
                 },
@@ -133,6 +145,8 @@ def _(
                 _spinner.update("Failed to connect to OMERO.")
                 raise Exception("Connection failed")
 
+            roi_service = conn.getRoiService()
+
             try:
                 dataset = omero_tb.get_dataset(
                     connection=conn, dataset_id=data_params["dataset_id"]
@@ -142,54 +156,87 @@ def _(
                 for image in dataset_images:
                     image_name = image.getName()
                     _spinner.update(f"Analyzing: {image_name}")
-                    if not image_name.endswith("SIR.dv"):
+                    if not image_name.endswith(data_params["image_name_filter"]):
                         continue
-                    image_data = omero_tb.get_intensities(
+                    if data_params["delete_preexisting_rois"]:
+                        preexisting_rois = roi_service.findByImage(
+                            image.getId(), None
+                        )
+                        if preexisting_rois := list(preexisting_rois.rois):
+                            omero_tb.delete_rois(conn, preexisting_rois)
+                    raw_image_data = omero_tb.get_intensities(
                         image, c_range=analysis_params["channel"]
                     )
-                    image_data = analysis_functions.rescale_SIM(image_data)
-                    image_data = np.squeeze(image_data)
+                    raw_image_data = np.squeeze(raw_image_data)
+
+                    if data_params["rescale_images"]:
+                        image_data = analysis_functions.rescale_SIM(
+                            raw_image_data, out_range="uint16"
+                        )
+
                     spots = analysis_functions.find_spots(
-                        image_data,
+                        raw_image_data,
                         min_sigma=analysis_params["min_sigma"],
                         max_sigma=analysis_params["max_sigma"],
                     )
-                    points_with_zc = []
-                    points_preview = []
-                    for i, spot in enumerate(spots):
-                        points_with_zc.append(
-                            omero_tb.create_shape_point(
-                                x_pos=spot[2],
-                                y_pos=spot[1],
-                                z_pos=spot[0],
-                                c_pos=analysis_params["channel"],
-                                name=str(i + 1),
-                            )
-                        )
-                        points_preview.append(
-                            omero_tb.create_shape_point(
-                                x_pos=spot[2], y_pos=spot[1], name=str(i + 1)
-                            )
-                        )
 
-                    omero_tb.create_roi(conn, image, points_with_zc)
-                    _spinner.update(f"Found {len(points_with_zc)} spots.")
+                    if len(spots):
+                        points_with_zc = []
+                        points_with_z = []
+                        points_preview = []
+                        for i, spot in enumerate(spots):
+                            points_with_zc.append(
+                                omero_tb.create_shape_point(
+                                    x_pos=spot[2],
+                                    y_pos=spot[1],
+                                    z_pos=spot[0],
+                                    c_pos=analysis_params["channel"],
+                                    name=str(i + 1),
+                                )
+                            )
+                            points_with_z.append(
+                                omero_tb.create_shape_point(
+                                    x_pos=spot[2],
+                                    y_pos=spot[1],
+                                    z_pos=spot[0],
+                                    name=str(i + 1),
+                                )
+                            )
+                            points_preview.append(
+                                omero_tb.create_shape_point(
+                                    x_pos=spot[2], y_pos=spot[1], name=str(i + 1)
+                                )
+                            )
 
-                    if data_params["create_preview_image"]:
-                        image_data_mip = np.max(image_data, 0)
-                        image_data_mip = np.expand_dims(
-                            image_data_mip, axis=(0, 1, 2)
-                        )
-                        image_mip = omero_tb.create_image_from_numpy_array(
-                            connection=conn,
-                            data=image_data_mip,
-                            image_name=f"{image_name[:-3]}_preview_mip",
-                            dataset=dataset,
-                            source_image_id=image.getId(),
-                            channels_list=[analysis_params["channel"]],
-                        )
-                        image_mip = omero_tb.get_image(conn, image_mip.getId())
-                        omero_tb.create_roi(conn, image_mip, points_preview)
+                        omero_tb.create_roi(conn, image, points_with_zc)
+                        if data_params["rescale_images"]:
+                            image_threshold = omero_tb.create_image_from_numpy_array(
+                                connection=conn,
+                                data=np.expand_dims(image_data, axis=(1, 2)),
+                                image_name=f"{image_name.split('.')[0]}_THR.{image_name.split('.')[1]}",
+                                image_description=f"mode-max stretched from imageid:{image.getId()}",
+                                dataset=dataset,
+                                source_image_id=image.getId(),
+                                channels_list=[analysis_params["channel"]],
+                            )
+                            image_threshold = omero_tb.get_image(
+                                conn, image_threshold.getId()
+                            )
+                            omero_tb.create_roi(conn, image_threshold, points_with_z)
+                        _spinner.update(f"Found {len(points_with_zc)} spots.")
+
+                        if data_params["create_preview_mip"]:
+                            image_data_mip = np.max(image_data, 0)
+                            image_mip = omero_tb.create_image_from_numpy_array(
+                                connection=conn,
+                                data=np.expand_dims(image_data_mip, axis=(0, 1, 2)),
+                                image_name=f"{image_name[:-3]}_preview_mip",
+                                dataset=dataset,
+                                source_image_id=image.getId(),
+                                channels_list=[analysis_params["channel"]],
+                            )
+                            image_mip = omero_tb.get_image(conn, image_mip.getId())
+                            omero_tb.create_roi(conn, image_mip, points_preview)
 
                 _spinner.update("✅ **Analysis Complete!**")
 
