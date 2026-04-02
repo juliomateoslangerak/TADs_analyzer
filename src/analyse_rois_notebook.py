@@ -8,7 +8,7 @@ def _():
     import marimo as mo
     import numpy as np
     import pandas as pd
-    from omero.model import PointI
+    from omero.model import MaskI, PointI
 
     import analysis_functions
     import omero_toolbox as omero_tb
@@ -42,6 +42,7 @@ def _():
         omero_tb,
         analysis_functions,
         PointI,
+        MaskI,
         default_analysis_parameters,
     )
 
@@ -95,8 +96,12 @@ def _(default_analysis_parameters, mo):
                         step=1,
                     ),
                     "image_name_filter": mo.ui.text(
-                        value="SIR.dv",
+                        value="SIR_THR.dv",
                         label="Image name filter",
+                    ),
+                    "delete_preexisting_masks": mo.ui.checkbox(
+                        value=True,
+                        label="Delete preexisting TADs",
                     ),
                 },
             ),
@@ -116,13 +121,13 @@ def _(default_analysis_parameters, mo):
                     ),
                     "roi_size_xy": mo.ui.number(
                         value=default_analysis_parameters["roi_size_xy"],
-                        label="ROI size (px)",
+                        label="ROI size XY (px)",
                         start=10,
                         stop=1000,
                     ),
                     "roi_size_z": mo.ui.number(
                         value=default_analysis_parameters["roi_size_z"],
-                        label="ROI size (px)",
+                        label="ROI size Z (px)",
                         start=6,
                         stop=500,
                     ),
@@ -148,7 +153,7 @@ def _(default_analysis_parameters, mo):
 
 
 @app.cell
-def _(PointI, analysis_form, analysis_functions, mo, np, pd, omero_tb):
+def _(PointI, MaskI, analysis_form, analysis_functions, mo, np, pd, omero_tb):
     if analysis_form.value is None:
         mo.md("### Waiting for input.")
 
@@ -194,6 +199,9 @@ def _(PointI, analysis_form, analysis_functions, mo, np, pd, omero_tb):
                     result = roi_service.findByImage(image.getId(), None)
                     for source_roi in result.rois:
                         for source_shape in source_roi.iterateShapes():
+                            if isinstance(source_shape, MaskI):
+                                omero_tb.delete_rois(conn, [source_roi])
+                                break
                             if not isinstance(source_shape, PointI):
                                 continue
                             try:
@@ -381,15 +389,18 @@ def _(PointI, analysis_form, analysis_functions, mo, np, pd, omero_tb):
                     value=dataset.getId(),
                 )
 
-                tads_omero_table = omero_tb.create_annotation_table_from_df(
-                    connection=conn,
-                    dataframe=dataset_df,
-                    table_name=f"dataset_{dataset.getId()}_tads",
-                    namespace="tads",
-                    table_description=f"Table of TADs for datasetid: {dataset.getId()}",
-                )
+                if not dataset_df.empty:  # Check that the table has actual data
+                    tads_omero_table = omero_tb.create_annotation_table_from_df(
+                        connection=conn,
+                        dataframe=dataset_df,
+                        table_name=f"dataset_{dataset.getId()}_tads",
+                        namespace="tads",
+                        table_description=f"Table of TADs for datasetid: {dataset.getId()}",
+                    )
 
-                omero_tb.link_annotation(dataset, tads_omero_table)
+                    omero_tb.link_annotation(dataset, tads_omero_table)
+                else:
+                    _spinner.update("No TADs found")
 
             except Exception as e:
                 print(f"Error processing image {image.getId()}: {e}")
