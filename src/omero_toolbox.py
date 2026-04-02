@@ -1,4 +1,5 @@
 # OMERO imports
+import logging
 import math
 import struct
 from functools import reduce
@@ -64,6 +65,8 @@ COLUMN_TYPES = {
     "file": grid.FileColumn,
 }
 
+logger = logging.getLogger(__name__)
+
 
 def open_connection(
     username, password, host, port, group=None, secure=True, keep_alive=60
@@ -80,18 +83,23 @@ def open_connection(
     if keep_alive is not None:
         conn.c.enableKeepAlive(keep_alive)
 
+    logger.info(f"Connecting to OMERO at {host}:{port} as {username}")
     try:
         conn.connect()
     except Exception as e:
+        logger.error(f"Failed to connect to OMERO: {e}")
         raise e
+    logger.info("Connection established")
     return conn
 
 
 def close_connection(connection):
+    logger.info("Closing OMERO connection")
     connection.close()
 
 
 def get_image(connection, image_id):
+    logger.debug(f"Retrieving image {image_id}")
     try:
         image = connection.getObject("Image", image_id)
     except Exception as e:
@@ -100,6 +108,7 @@ def get_image(connection, image_id):
 
 
 def get_dataset(connection, dataset_id):
+    logger.debug(f"Retrieving dataset {dataset_id}")
     try:
         dataset = connection.getObject("Dataset", dataset_id)
     except Exception as e:
@@ -108,6 +117,7 @@ def get_dataset(connection, dataset_id):
 
 
 def get_project(connection, project_id):
+    logger.debug(f"Retrieving project {project_id}")
     try:
         project = connection.getObject("Project", project_id)
     except Exception as e:
@@ -141,6 +151,7 @@ def get_pixel_size(image, order="ZXY"):
         try:
             pixel_sizes += (getattr(pixels, f"getPhysicalSize{a}")().getValue(),)
         except AttributeError:
+            logger.warning(f"Physical size for axis {a} not set; defaulting to 1.0")
             pixel_sizes += (
                 1.0,
             )  # If the pixel size is not set, we return the unit value as 1.0
@@ -256,6 +267,7 @@ def _get_planes(image, ranges):
     )
 
     max_plane_size = image._conn.getMaxPlaneSize()
+    logger.debug(f"Fetching {nr_planes} plane(s) with output shape {output_shape}")
     if (
         output_shape[4] < max_plane_size[0] and output_shape[3] < max_plane_size[1]
     ):  # fits in message size
@@ -263,8 +275,10 @@ def _get_planes(image, ranges):
             image.getSizeX() == output_shape[4]
             and image.getSizeY() == output_shape[3]
         ):
+            logger.debug("Fetching whole planes")
             _get_whole_planes()
         else:
+            logger.debug("Fetching whole tiles")
             _get_whole_tiles()
         intensities = np.reshape(intensities, shape=output_shape)
 
@@ -274,8 +288,10 @@ def _get_planes(image, ranges):
             image.getSizeX() == output_shape[4]
             and image.getSizeY() == output_shape[3]
         ):
+            logger.debug("Fetching tiled planes")
             _get_tiled_planes()
         else:
+            logger.debug("Fetching tiled tiles")
             _get_tiled_tiles()
 
     return intensities
@@ -377,6 +393,7 @@ def create_image_copy(
 ):
     """Creates a copy of an existing OMERO image using all the metadata but not the pixels values.
     The parameter values will override the ones of the original image"""
+    logger.info(f"Creating image copy from source image {source_image_id}")
     pixels_service = connection.getPixelsService()
 
     if channel_list is None:
@@ -395,6 +412,7 @@ def create_image_copy(
     )
 
     new_image = connection.getObject("Image", image_id)
+    logger.info(f"Created image copy with id {image_id}")
 
     if (
         image_description is not None
@@ -418,6 +436,7 @@ def create_image(
     image_description=None,
 ):
     """Creates an OMERO empty image from scratch"""
+    logger.info(f"Creating image '{image_name}'")
     pixels_service = connection.getPixelsService()
     query_service = connection.getQueryService()
 
@@ -447,6 +466,7 @@ def create_image(
     )
 
     new_image = connection.getObject("Image", image_id.getValue())
+    logger.info(f"Created image '{image_name}' with id {image_id.getValue()}")
 
     if channel_labels is not None:
         label_channels(new_image, channel_labels)
@@ -532,6 +552,7 @@ def create_image_from_numpy_array(
         )
 
     else:
+        logger.debug("Image exceeds max plane size; uploading via tiles")
         zct_tile_list = _get_tile_list(zct_list, data.shape, max_plane_size)
 
         if source_image_id is not None:
@@ -618,6 +639,7 @@ def _get_tile_list(zct_list, data_shape, tile_size):
 
 
 def link_dataset_to_project(connection, dataset, project):
+    logger.debug(f"Linking dataset {dataset.getId()} to project {project.getId()}")
     link = model.ProjectDatasetLinkI()
     link.setParent(
         model.ProjectI(project.getId(), False)
@@ -629,6 +651,7 @@ def link_dataset_to_project(connection, dataset, project):
 
 
 def link_image_to_dataset(connection, image, dataset):
+    logger.debug(f"Linking image {image.getId()} to dataset {dataset.getId()}")
     link = model.DatasetImageLinkI()
     link.setParent(model.DatasetI(dataset.getId(), False))
     link.setChild(model.ImageI(image.getId(), False))
@@ -641,6 +664,7 @@ def link_image_to_dataset(connection, image, dataset):
 
 
 def create_project(connection, name, description=None):
+    logger.info(f"Creating project '{name}'")
     new_project = gw.ProjectWrapper(connection, model.ProjectI())
     new_project.setName(name)
     if description:
@@ -651,6 +675,7 @@ def create_project(connection, name, description=None):
 
 
 def create_dataset(connection, name, description=None, parent_project=None):
+    logger.info(f"Creating dataset '{name}'")
     new_dataset = gw.DatasetWrapper(connection, model.DatasetI())
     new_dataset.setName(name)
     if description is not None:
@@ -683,6 +708,10 @@ def _delete_object(
     else:
         obj_ids = [o.getId() for o in objects]
 
+    logger.info(
+        f"Deleting {object_type} object(s) with ids {obj_ids} "
+        f"(annotations={delete_annotations}, children={delete_children})"
+    )
     try:
         conn.deleteObjects(
             object_type,
@@ -693,7 +722,7 @@ def _delete_object(
         )
         return True
     except Exception as e:
-        print(e)
+        logger.error(f"Failed to delete {object_type} objects {obj_ids}: {e}")
         return False
 
 
@@ -704,6 +733,17 @@ def delete_project(conn, projects, delete_annotations=False, delete_children=Fal
         objects=projects,
         delete_annotations=delete_annotations,
         delete_children=delete_children,
+        wait=False,
+    )
+
+
+def delete_rois(conn, rois):
+    _delete_object(
+        conn=conn,
+        object_type="ROI",
+        objects=rois,
+        delete_annotations=False,
+        delete_children=False,
         wait=False,
     )
 
@@ -805,7 +845,7 @@ def _serialize_map_value(value):
         try:
             return dumps(value)
         except ValueError as e:
-            # TODO: log an error
+            logger.error(f"Could not serialize map value {value!r}: {e}")
             return dumps(value.__str__())
 
 
@@ -985,7 +1025,9 @@ def create_annotation_table(
     table_description=None,
 ):
     """Creates a table annotation from a list of lists"""
-
+    logger.info(
+        f"Creating table annotation '{table_name}' with {len(column_names)} column(s)"
+    )
     column_length = len(values[0])
     if any(len(l) != column_length for l in values):
         raise ValueError("The columns have different lengths")
@@ -1047,10 +1089,16 @@ def create_annotation_table_from_df(
 
 def create_roi(connection, image, shapes, name=None, description=None):
     """A pass-through to link a roi to an image"""
+    if not shapes:  # No shapes
+        logger.warning(f"No shapes provided for ROI on image {image.getId()}")
+        return None
     return _create_roi(connection, image, shapes, name, description)
 
 
 def _create_roi(connection, image, shapes, name, description):
+    logger.debug(
+        f"Creating ROI '{name}' on image {image.getId()} with {len(shapes)} shape(s)"
+    )
     # create an ROI, link it to Image
     # roi = gw.RoiWrapper()
     roi = model.RoiI()  # TODO: work with wrappers
