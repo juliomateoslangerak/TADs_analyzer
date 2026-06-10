@@ -30,8 +30,8 @@ def _():
         ),
         "roi_size_xy": 56,
         "roi_size_z": 20,
-        "domain_min_volume_px": 210,  # Minimum volume for the regions
-        "subdomain_min_volume_px": 38,  # Minimum volume for the regions
+        "domain_min_volume_px": 200,  # Minimum volume for the regions
+        "subdomain_min_volume_px": 20,  # Minimum volume for the regions
         "sigma": 0.5,
         "pixel_size": (0.125, 0.039, 0.039),  # as ZYX
     }
