@@ -699,6 +699,8 @@ def _delete_object(
     wait,
     callback=None,
 ):
+    if not objects:
+        return True
     if not isinstance(objects, list) and not isinstance(object, int):
         obj_ids = [objects.getId()]
     elif not isinstance(objects, list):
