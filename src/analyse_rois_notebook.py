@@ -402,11 +402,20 @@ def _(PointI, MaskI, analysis_form, analysis_functions, mo, np, pd, omero_tb):
                         connection=conn,
                         dataframe=dataset_df,
                         table_name=f"dataset_{dataset.getId()}_tads",
-                        namespace="tads",
+                        namespace="tads_analyzer",
                         table_description=f"Table of TADs for datasetid: {dataset.getId()}",
                     )
 
                     omero_tb.link_annotation(dataset, tads_omero_table)
+
+                    analysis_params_ann = omero_tb.create_annotation_map(
+                        connection=conn,
+                        annotation=analysis_params,
+                        annotation_name="analysis_params",
+                        namespace="tads_analyzer",
+                    )
+                    omero_tb.link_annotation(dataset, analysis_params_ann)
+
                 else:
                     _spinner.update("No TADs found")
 
