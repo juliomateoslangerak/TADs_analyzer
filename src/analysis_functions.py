@@ -119,7 +119,9 @@ def process_channel(
     subdomain_labels = watershed(np.invert(channel), mask=domain_labels)
     if subdomain_min_volume is not None:
         subdomain_labels = remove_small_objects(
-            subdomain_labels, connectivity=subdomain_labels.ndim, max_size=min_volume
+            subdomain_labels,
+            connectivity=subdomain_labels.ndim,
+            max_size=subdomain_min_volume,
         )
         subdomain_labels = relabel_sequential(subdomain_labels, offset=2)[0]
     subdomain_props_dict = regionprops_table(
