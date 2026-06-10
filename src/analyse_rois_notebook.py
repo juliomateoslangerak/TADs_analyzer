@@ -197,11 +197,19 @@ def _(PointI, MaskI, analysis_form, analysis_functions, mo, np, pd, omero_tb):
                     image_df = pd.DataFrame()
 
                     result = roi_service.findByImage(image.getId(), None)
+
+                    if data_params["delete_preexisting_masks"]:
+                        rois_to_delete = [
+                            roi.id.val
+                            for roi in result.rois
+                            if isinstance(roi.getPrimaryShape(), MaskI)
+                        ]
+                        if rois_to_delete:
+                            conn.deleteObjects("Roi", rois_to_delete)
+                        result = roi_service.findByImage(image.getId(), None)
+
                     for source_roi in result.rois:
                         for source_shape in source_roi.iterateShapes():
-                            if isinstance(source_shape, MaskI):
-                                omero_tb.delete_rois(conn, [source_roi])
-                                break
                             if not isinstance(source_shape, PointI):
                                 continue
                             try:
