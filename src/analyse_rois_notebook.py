@@ -28,12 +28,12 @@ def _():
             "min_intensity",
             # "coords",
         ),
-        "roi_size_xy": 56,
+        "roi_size_xy": 55,
         "roi_size_z": 20,
         "domain_min_volume_px": 200,  # Minimum volume for the regions
-        "subdomain_min_volume_px": 20,  # Minimum volume for the regions
+        "subdomain_min_volume_px": 36,  # Minimum volume for the regions
         "sigma": 0.5,
-        "pixel_size": (0.125, 0.039, 0.039),  # as ZYX
+        "pixel_size": (0.125, 0.0395, 0.0395),  # as ZYX
     }
     return (
         mo,
